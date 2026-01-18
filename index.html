@@ -129,7 +129,7 @@ button {
   Głośność: <input type="range" id="volumeControl" min="1" max="100" value="50">
 </div>
 
-<button id="toggleAutoRoll">Włącz Auto-Roll</button>
+<button id="toggleAutoRoll">Włącz Auto-Roll (5000 monet)</button>
 
 <div id="currency">Monety: <span id="coins">0</span></div>
 
@@ -178,7 +178,7 @@ let musicStarted = false;
 let coins = parseInt(localStorage.getItem('coins'))||0;
 let inventory = JSON.parse(localStorage.getItem('inventory'))||[];
 let historyData = JSON.parse(localStorage.getItem('historyData'))||{};
-let cooldown = parseInt(localStorage.getItem('cooldown'))||1000; // min 1s
+let cooldown = parseInt(localStorage.getItem('cooldown'))||1000; 
 let lastRoll = 0;
 let totalRolls = parseInt(localStorage.getItem('totalRolls'))||0;
 let autoRollInterval = null;
@@ -255,7 +255,6 @@ function rollRNG(){
       if(historyData[selected.text]) historyData[selected.text]++;
       else historyData[selected.text]=1;
 
-      // ANIMACJA ŚLEDZIU
       if(selected.text==='Śledziu'){
         let flashCount = 0;
         const flashInterval = setInterval(()=>{
@@ -281,6 +280,9 @@ function rollRNG(){
 // ===== AUTO-ROLL =====
 function startAutoRoll(){
   if(autoRollInterval) return;
+  if(coins<5000){ alert('Nie masz 5000 monet aby włączyć Auto-Roll!'); return;}
+  coins -= 5000;
+  updateUI();
   autoRollInterval = setInterval(()=>rollRNG(), 1500);
   document.getElementById('toggleAutoRoll').textContent = 'Wyłącz Auto-Roll';
 }
@@ -288,7 +290,7 @@ function stopAutoRoll(){
   if(autoRollInterval){
     clearInterval(autoRollInterval);
     autoRollInterval = null;
-    document.getElementById('toggleAutoRoll').textContent = 'Włącz Auto-Roll';
+    document.getElementById('toggleAutoRoll').textContent = 'Włącz Auto-Roll (5000 monet)';
   }
 }
 
