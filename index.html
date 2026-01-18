@@ -174,12 +174,14 @@ function rollRNG(showRareAnimationOnly=false){
   totalRolls++;
 
   const entries=[];
-  images.forEach(img=>{
-    if(img.requiresItem && !inventory.includes(img.requiresItem)) return;
-    let count=Math.floor(img.chance*1000000);
-    if(inventory.length>0) count=Math.floor(count*1.05);
-    for(let i=0;i<count;i++) entries.push(img);
-  });
+images.forEach(img=>{
+  if(img.text === 'Śledziu') return; // ❌ USUWAMY ŚLEDZIA Z LOSOWANIA
+  if(img.requiresItem && !inventory.includes(img.requiresItem)) return;
+
+  let count = Math.floor(img.chance * 1000000);
+  if(inventory.length > 0) count = Math.floor(count * 1.05);
+  for(let i = 0; i < count; i++) entries.push(img);
+});
 
   const imgElem=document.getElementById('resultImage');
   const textElem=document.getElementById('resultText');
