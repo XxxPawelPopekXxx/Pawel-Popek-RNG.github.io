@@ -1,2 +1,2 @@
-# Pawe-Popek-RNG
+# Paweł-Popek-RNG
 Sigmastyczny symulator❤️
