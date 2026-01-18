@@ -142,14 +142,16 @@ const bgMusic = document.getElementById('backgroundMusic');
 let musicStarted = false;
 
 // ===== ZMIENNE =====
-let coins = parseInt(localStorage.getItem('coins'))||0;
-let inventory = JSON.parse(localStorage.getItem('inventory'))||[];
-let historyData = JSON.parse(localStorage.getItem('historyData'))||{};
-let cooldown = parseInt(localStorage.getItem('cooldown'))||3000; // 3s start
+// Sprawdzenie LocalStorage i ustawienie startowych wartości
+let coins = localStorage.getItem('coins') !== null ? parseInt(localStorage.getItem('coins')) : 0;
+let inventory = localStorage.getItem('inventory') !== null ? JSON.parse(localStorage.getItem('inventory')) : [];
+let historyData = localStorage.getItem('historyData') !== null ? JSON.parse(localStorage.getItem('historyData')) : {};
+let cooldown = localStorage.getItem('cooldown') !== null ? parseInt(localStorage.getItem('cooldown')) : 3000; // START 3s
 let lastRoll = 0;
-let totalRolls = parseInt(localStorage.getItem('totalRolls'))||0;
-let autoRollEnabled = JSON.parse(localStorage.getItem('autoRollEnabled'))||false;
+let totalRolls = localStorage.getItem('totalRolls') !== null ? parseInt(localStorage.getItem('totalRolls')) : 0;
+let autoRollEnabled = localStorage.getItem('autoRollEnabled') !== null ? JSON.parse(localStorage.getItem('autoRollEnabled')) : false;
 let autoRollInterval = null;
+
 
 // ===== FUNKCJE =====
 function updateUI(){
