@@ -37,6 +37,36 @@ button:active { transform: scale(0.9); }
 
 #resetProgress { position:fixed; bottom:10px; left:10px; background-color:#f44336; color:white; padding:10px 15px; border-radius:10px; font-weight:bold; cursor:pointer; }
 #chanceList { margin-top:10px; font-size:0.9em; color:#ccc; text-align:left; max-width:250px; margin-left:auto; margin-right:auto; }
+#shopOverlay {
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.75);
+  z-index:1000;
+  justify-content:center;
+  align-items:center;
+}
+
+#shopBox {
+  background:#222;
+  padding:25px;
+  border-radius:15px;
+  width:360px;
+  text-align:center;
+}
+
+.shopItem {
+  border:1px solid #555;
+  border-radius:10px;
+  padding:10px;
+  margin:10px 0;
+}
+
+.shopItem button {
+  margin-top:5px;
+  width:100%;
+}
+
 </style>
 </head>
 <body>
@@ -48,6 +78,7 @@ button:active { transform: scale(0.9); }
   <div>Autorzy: KoleszkaPP i its4iko</div>
   <div>Play Time: <span id="statsPlayTime">0s</span></div>
   <div>Łączne losowania: <span id="statsRolls">0</span></div>
+  <div>Luck: x<span id="statsLuck">1</span></div>
 </div>
 
 <img id="resultImage" src="photo.png" alt="Result">
@@ -62,6 +93,7 @@ button:active { transform: scale(0.9); }
 <button id="muteButton">Mute/Unmute</button>
 
 <div id="currency">Monety: <span id="coins">0</span></div>
+<button id="openShop" class="upgradeButton">Sklep</button>
 
 <div id="upgrades">
   <button class="upgradeButton" id="shortenCooldown">Skróć cooldown (-0.5s) 50 monet</button>
@@ -85,6 +117,39 @@ button:active { transform: scale(0.9); }
 </div>
 
 <div id="chanceList"></div>
+<div id="shopOverlay">
+  <div id="shopBox">
+    <h2>Sklep Pawła</h2>
+
+    <div class="shopItem">
+      <b>Lucky Pawel (1.5x)</b><br>
+      gejmingowy paweł x20<br>
+      paweł prezydent x10<br>
+      1000 monet
+      <button onclick="buyShopItem('lucky')">Kup</button>
+    </div>
+
+    <div class="shopItem">
+      <b>Mega Pawel (2x)</b><br>
+      pawel w zoltym hoodie x25<br>
+      funni paweł x15<br>
+      2500 monet
+      <button onclick="buyShopItem('mega')">Kup</button>
+    </div>
+
+    <div class="shopItem">
+      <b>Ultimate Pawel (3x)</b><br>
+      paweł ok x50<br>
+      świąteczny paweł x20<br>
+      paweł dostaje backshoty x2<br>
+      paweł komunista x1<br>
+      5000 monet
+      <button onclick="buyShopItem('ultimate')">Kup</button>
+    </div>
+
+    <button onclick="closeShop()">Zamknij</button>
+  </div>
+</div>
 
 <audio id="backgroundMusic" loop></audio>
 
@@ -126,6 +191,9 @@ let autoRollEnabled = localStorage.getItem('autoRollEnabled') !== null ? JSON.pa
 let autoRollInterval = null;
 let playTime = localStorage.getItem('playTime') !== null ? parseInt(localStorage.getItem('playTime')) : 0;
 let playTimeStart = Date.now();
+let luckMultiplier = localStorage.getItem('luckMultiplier')
+  ? parseFloat(localStorage.getItem('luckMultiplier'))
+  : 1;
 
 // ===== FUNKCJE =====
 function updateUI(){
@@ -142,6 +210,7 @@ function updateUI(){
   document.getElementById('coins').textContent = coins;
   document.getElementById('statsCoins').textContent = coins;
   document.getElementById('statsRolls').textContent = totalRolls;
+  document.getElementById('statsLuck').textContent = luckMultiplier;
 
   // aktualizacja listy szans (bez Śledziu)
   const chanceList = document.getElementById('chanceList');
@@ -178,7 +247,7 @@ images.forEach(img=>{
   if(img.text === 'Śledziu') return; // ❌ USUWAMY ŚLEDZIA Z LOSOWANIA
   if(img.requiresItem && !inventory.includes(img.requiresItem)) return;
 
-  let count = Math.floor(img.chance * 1000000);
+  let count = Math.floor(img.chance * 1000000 * luckMultiplier);
   if(inventory.length > 0) count = Math.floor(count * 1.05);
   for(let i = 0; i < count; i++) entries.push(img);
 });
@@ -288,6 +357,63 @@ const resetNo = document.getElementById('resetNo');
 document.getElementById('resetProgress').addEventListener('click',()=>{ resetOverlay.style.display='flex'; });
 resetNo.addEventListener('click',()=>{ resetOverlay.style.display='none'; });
 resetYes.addEventListener('click',()=>{ localStorage.clear(); location.reload(); });
+function openShop(){
+  document.getElementById('shopOverlay').style.display='flex';
+}
+function closeShop(){
+  document.getElementById('shopOverlay').style.display='none';
+}
+
+document.getElementById('openShop').addEventListener('click', openShop);
+
+function hasItems(req){
+  return Object.entries(req).every(([name,count]) =>
+    (historyData[name] || 0) >= count
+  );
+}
+
+function buyShopItem(type){
+  const configs = {
+    lucky:{
+      cost:1000,
+      luck:1.5,
+      req:{
+        "gejmingowy paweł":20,
+        "paweł prezydent":10
+      }
+    },
+    mega:{
+      cost:2500,
+      luck:2,
+      req:{
+        "pawel w zoltym hoodie":25,
+        "funni paweł":15
+      }
+    },
+    ultimate:{
+      cost:5000,
+      luck:3,
+      req:{
+        "paweł ok":50,
+        "świąteczny paweł":20,
+        "paweł dostaje backshoty":2,
+        "paweł komunista":1
+      }
+    }
+  };
+
+  const item = configs[type];
+
+  if(coins < item.cost) return alert("Nie masz monet!");
+  if(!hasItems(item.req)) return alert("Brakuje przedmiotów!");
+
+  coins -= item.cost;
+  luckMultiplier = Math.max(luckMultiplier, item.luck);
+  localStorage.setItem('luckMultiplier', luckMultiplier);
+
+  updateUI();
+  alert(`Kupiono ${type.toUpperCase()} PAWEL — Luck x${luckMultiplier}`);
+}
 
 // ===== ODŚWIEŻANIE UI =====
 setInterval(updateUI,500);
