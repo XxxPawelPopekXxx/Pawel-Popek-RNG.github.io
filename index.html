@@ -37,14 +37,17 @@ button:active { transform: scale(0.9); }
 
 #resetProgress { position:fixed; bottom:10px; left:10px; background-color:#f44336; color:white; padding:10px 15px; border-radius:10px; font-weight:bold; cursor:pointer; }
 #chanceList { margin-top:10px; font-size:0.9em; color:#ccc; text-align:left; max-width:250px; margin-left:auto; margin-right:auto; }
-#shopOverlay {
-  display:none;
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.75);
-  z-index:1000;
-  justify-content:center;
-  align-items:center;
+#shopBox {
+  background:#222;
+  padding:25px;
+  border-radius:15px;
+  width:360px;
+  text-align:center;
+  box-shadow: 0 0 40px rgba(0,0,0,0.6);
+}
+#shopOverlay.active {
+  visibility:visible;
+  opacity:1;
 }
 
 #shopBox {
@@ -53,6 +56,7 @@ button:active { transform: scale(0.9); }
   border-radius:15px;
   width:360px;
   text-align:center;
+  box-shadow: 0 0 40px rgba(0,0,0,0.6);
 }
 
 .shopItem {
@@ -63,8 +67,13 @@ button:active { transform: scale(0.9); }
 }
 
 .shopItem button {
-  margin-top:5px;
-  width:100%;
+  margin: 10px auto 0 auto;
+  display: block;
+  width: 80%;
+  background-color: #4CAF50;
+  color: white;
+  font-size: 1.1em;
+  border-radius: 10px;
 }
 
 </style>
@@ -358,10 +367,10 @@ document.getElementById('resetProgress').addEventListener('click',()=>{ resetOve
 resetNo.addEventListener('click',()=>{ resetOverlay.style.display='none'; });
 resetYes.addEventListener('click',()=>{ localStorage.clear(); location.reload(); });
 function openShop(){
-  document.getElementById('shopOverlay').style.display='flex';
+  document.getElementById('shopOverlay').classList.add('active');
 }
 function closeShop(){
-  document.getElementById('shopOverlay').style.display='none';
+  document.getElementById('shopOverlay').classList.remove('active');
 }
 
 document.getElementById('openShop').addEventListener('click', openShop);
