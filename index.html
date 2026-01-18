@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Paweł RNG</title>
+<title>Paweł RNG - Mega Slot Edition</title>
 <style>
 body {
   font-family: Arial, sans-serif;
@@ -128,16 +128,15 @@ button {
 #resetYes { background-color: #4CAF50; color: white; }
 #resetNo { background-color: #555; color: white; }
 #resetPopupContent button:active { transform: scale(0.9); }
-
 </style>
 </head>
 <body>
 
-<h1>Paweł RNG</h1>
+<h1>Paweł RNG - Mega Slot</h1>
 
 <div id="stats">
-  <div>Monety: <span id="statsCoins">0</span></div>
-  <div>Przedmioty: <span id="statsItems">0</span></div>
+  <div>Play Time: <span id="statsPlayTime">0s</span></div>
+  <div>Autorzy: KoleszkaPP i its4iko</div>
   <div>Łączne losowania: <span id="statsRolls">0</span></div>
 </div>
 
@@ -207,11 +206,17 @@ let cooldown = localStorage.getItem('cooldown') !== null ? parseInt(localStorage
 let lastRoll = 0;
 let totalRolls = localStorage.getItem('totalRolls') !== null ? parseInt(localStorage.getItem('totalRolls')) : 0;
 let autoRollEnabled = localStorage.getItem('autoRollEnabled') !== null ? JSON.parse(localStorage.getItem('autoRollEnabled')) : false;
-let autoRollInterval = null;
+
+// ===== Play Time =====
+let startTime = Date.now();
+let savedPlayTime = localStorage.getItem('playTime') !== null ? parseInt(localStorage.getItem('playTime')) : 0;
 
 // ===== FUNKCJE =====
 function updateUI(){
-  document.getElementById('coins').textContent = coins;
+  // Aktualizacja Play Time
+  let currentPlayTime = savedPlayTime + Math.floor((Date.now()-startTime)/1000);
+  document.getElementById('statsPlayTime').textContent = currentPlayTime + 's';
+
   document.getElementById('inventory').textContent = inventory.length?`Ekwipunek: ${inventory.join(', ')}`:'Ekwipunek: brak';
   let historyHTML='';
   for(const[key,val] of Object.entries(historyData)){
@@ -224,9 +229,8 @@ function updateUI(){
   localStorage.setItem('cooldown',cooldown);
   localStorage.setItem('totalRolls', totalRolls);
   localStorage.setItem('autoRollEnabled', autoRollEnabled);
+  localStorage.setItem('playTime', currentPlayTime);
 
-  document.getElementById('statsCoins').textContent = coins;
-  document.getElementById('statsItems').textContent = inventory.length;
   document.getElementById('statsRolls').textContent = totalRolls;
 }
 
@@ -358,8 +362,12 @@ document.getElementById('resetYes').addEventListener('click',()=>{
   location.reload();
 });
 
-// ===== ODŚWIEŻANIE COOLDOWN =====
-setInterval(showCooldown,100);
+// ===== ODŚWIEŻANIE COOLDOWN I UI =====
+setInterval(()=>{
+  showCooldown();
+  updateUI();
+},100);
+
 updateUI();
 </script>
 </body>
