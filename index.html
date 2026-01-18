@@ -24,7 +24,7 @@ button:active { transform: scale(0.9); }
 #inventory, #history, #cooldownDisplay { margin-top:15px; font-size:1.1em; }
 #history { max-height:200px; overflow-y:auto; border:1px solid #555; padding:10px; border-radius:10px; width:90%; margin:10px auto; background-color:#222; }
 
-#stats { position:fixed; top:10px; right:10px; background-color:#222; border:1px solid #555; padding:10px; border-radius:10px; text-align:left; width:220px; font-size:0.9em; }
+#stats { position:fixed; top:10px; right:10px; background-color:#222; border:1px solid #555; padding:10px; border-radius:10px; text-align:left; width:250px; font-size:0.9em; }
 
 #resetOverlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:999; color:white; justify-content:center; align-items:center; }
 #resetBox { background:#222; padding:30px; border-radius:15px; text-align:center; max-width:400px; }
@@ -36,6 +36,7 @@ button:active { transform: scale(0.9); }
 #volumeControl { margin-top:15px; }
 
 #resetProgress { position:fixed; bottom:10px; left:10px; background-color:#f44336; color:white; padding:10px 15px; border-radius:10px; font-weight:bold; cursor:pointer; }
+#chanceList { margin-top:10px; font-size:0.9em; color:#ccc; text-align:left; max-width:250px; margin-left:auto; margin-right:auto; }
 </style>
 </head>
 <body>
@@ -83,6 +84,8 @@ button:active { transform: scale(0.9); }
   </div>
 </div>
 
+<div id="chanceList"></div>
+
 <audio id="backgroundMusic" loop></audio>
 
 <script>
@@ -103,7 +106,7 @@ const musicFiles = ['music.mp3','music2.mp3','music3.mp3','music4.mp3','music5.m
 const bgMusic = document.getElementById('backgroundMusic');
 let musicStarted = false;
 
-// ===== OBSŁUGA KOŃCA PIOSENKI =====
+// ===== MUZYKA LOSOWA PO KONCU =====
 bgMusic.addEventListener('ended',()=>{
     const randomMusic = musicFiles[Math.floor(Math.random()*musicFiles.length)];
     bgMusic.src = randomMusic;
@@ -138,12 +141,18 @@ function updateUI(){
   document.getElementById('statsCoins').textContent = coins;
   document.getElementById('statsRolls').textContent = totalRolls;
 
+  // aktualizacja listy szans
+  const chanceList = document.getElementById('chanceList');
+  chanceList.innerHTML = 'Aktualne szanse:<br>';
+  images.forEach(img=>{
+    chanceList.innerHTML+=`${img.text}: ${(img.chance*100).toFixed(2)}%<br>`;
+  });
+
   localStorage.setItem('coins',coins);
   localStorage.setItem('inventory',JSON.stringify(inventory));
   localStorage.setItem('historyData',JSON.stringify(historyData));
   localStorage.setItem('cooldown',cooldown);
   localStorage.setItem('totalRolls',totalRolls);
-  localStorage.setItem('autoRollEnabled',autoRollEnabled);
 }
 
 // ===== COOLDOWN =====
@@ -214,7 +223,7 @@ function rollRNG(showRareAnimationOnly=false){
 document.getElementById('rollButton').addEventListener('click', async ()=>{
   if(!musicStarted){
     const randomMusic = musicFiles[Math.floor(Math.random()*musicFiles.length)];
-    bgMusic.src=randomMusic;
+    bgMusic.src = randomMusic;
     try{ await bgMusic.play(); musicStarted=true;}catch(err){console.log(err);}
   }
   rollRNG(true);
@@ -230,8 +239,18 @@ document.getElementById('shortenCooldown').addEventListener('click',()=>{
 });
 
 document.getElementById('increaseChances').addEventListener('click',()=>{
-  if(coins>=100){ coins-=100; images.forEach(img=>{ img.chance=Math.round(img.chance*1.05*1000)/1000 }); updateUI(); alert('Szanse nieco ulepszone!'); }
-  else alert('Nie masz wystarczająco monet!');
+  if(coins>=100){
+    coins-=100;
+    images.forEach(img=>{
+      if(img.text==='gejmingowy paweł' || img.text==='paweł prezydent'){
+        img.chance = Math.max(0.01, img.chance*0.95); // zmniejszamy szansę
+      } else {
+        img.chance = Math.min(1, Math.round(img.chance*1.05*1000)/1000); // zwiększamy szansę pozostałych
+      }
+    });
+    updateUI(); 
+    alert('Szanse zostały ulepszone! Najpospolitsze Pawły mają teraz nieco mniejsze szanse.');
+  } else alert('Nie masz wystarczająco monet!');
 });
 
 document.getElementById('buyItem').addEventListener('click',()=>{
