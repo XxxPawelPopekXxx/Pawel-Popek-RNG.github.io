@@ -102,11 +102,12 @@ button {
   Głośność: <input type="range" id="volumeControl" min="1" max="100" value="50">
 </div>
 
+<button id="toggleAutoRoll">Włącz Auto-Roll</button>
+
 <div id="currency">Monety: <span id="coins">0</span></div>
 
 <div id="upgrades">
   <button class="upgradeButton" id="shortenCooldown">Skróć cooldown (50 monet)</button>
-  <button class="upgradeButton" id="removeCooldown">Auto-Roll (2000 monet)</button>
   <button class="upgradeButton" id="increaseChances">Ulepszenie szans (100 monet)</button>
   <button class="upgradeButton" id="buyItem">Kup Tajemniczy Przedmiot (100 monet)</button>
 </div>
@@ -127,7 +128,7 @@ const images = [
   {src: 'photo6.png', text: 'świąteczny paweł', chance: 1/64, rarity: 'Legendary', reward: 80},
   {src: 'photo7.png', text: 'paweł dostaje backshoty', chance: 1/128, rarity: 'Ultra Legendary', reward: 160},
   {src: 'photo8.png', text: 'paweł komunista', chance: 1/256, rarity: 'Ultra Legendary', reward: 320},
-  {src: 'photo9.png', text: 'Śledziu', chance: 1/10000000, rarity: 'Secret', reward: 500, requiresItem: 'Tajemniczy Przedmiot'}
+  {src: 'photo9.png', text: 'Śledziu', chance: 1/100000000000000, rarity: 'Secret', reward: 500, requiresItem: 'Tajemniczy Przedmiot'}
 ];
 
 const musicFiles = ['music.mp3','music2.mp3','music3.mp3','music4.mp3','music5.mp3'];
@@ -166,21 +167,16 @@ function updateUI(){
 function showCooldown(){
   const now=Date.now();
   const diff=lastRoll?Math.max(0,cooldown-(now-lastRoll)):0;
-  if(cooldown===0){
-    document.getElementById('cooldownDisplay').textContent = 'Auto-Roll aktywny';
-  } else {
-    document.getElementById('cooldownDisplay').textContent=`Cooldown: ${(diff/1000).toFixed(1)}s`;
-  }
+  document.getElementById('cooldownDisplay').textContent=`Cooldown: ${(diff/1000).toFixed(1)}s`;
 }
 
 // ===== SLOT MEGA =====
 function rollRNG(){
   const now=Date.now();
-  if(cooldown && now-lastRoll<cooldown){ return; }
+  if(now-lastRoll<cooldown){ return; }
   lastRoll=now;
   totalRolls++;
 
-  // Animacja bez Śledziu
   const animPool = images.filter(img => !img.requiresItem || (img.requiresItem && img.text!=='Śledziu'));
   const finalPool = images.filter(img => !img.requiresItem || inventory.includes(img.requiresItem));
 
@@ -220,14 +216,14 @@ function rollRNG(){
       if(historyData[selected.text]) historyData[selected.text]++;
       else historyData[selected.text]=1;
 
-      // Specjalna animacja jeśli wylosowano Śledziu
+      // MEGA FLASHY ANIMACJA ŚLEDZIU
       if(selected.text==='Śledziu'){
         let flashCount = 0;
         const flashInterval = setInterval(()=>{
-          imgElem.style.transform = `scale(${1+0.1*Math.random()}) rotate(${(Math.random()-0.5)*30}deg)`;
-          imgElem.style.filter = `brightness(${1+Math.random()*1})`;
+          imgElem.style.transform = `scale(${1+0.3*Math.random()}) rotate(${(Math.random()-0.5)*60}deg)`;
+          imgElem.style.filter = `brightness(${1+Math.random()*2})`;
           flashCount++;
-          if(flashCount>10){
+          if(flashCount>15){
             clearInterval(flashInterval);
             imgElem.style.transform='scale(1) rotate(0deg)';
             imgElem.style.filter='brightness(1)';
@@ -247,12 +243,14 @@ function rollRNG(){
 function startAutoRoll(){
   if(autoRollInterval) return;
   autoRollInterval = setInterval(()=>rollRNG(), 1500);
+  document.getElementById('toggleAutoRoll').textContent = 'Wyłącz Auto-Roll';
 }
 
 function stopAutoRoll(){
   if(autoRollInterval){
     clearInterval(autoRollInterval);
     autoRollInterval = null;
+    document.getElementById('toggleAutoRoll').textContent = 'Włącz Auto-Roll';
   }
 }
 
@@ -278,15 +276,16 @@ document.getElementById('muteButton').addEventListener('click',()=>{ bgMusic.mut
 const volumeSlider = document.getElementById('volumeControl');
 volumeSlider.addEventListener('input',()=>{ bgMusic.volume = volumeSlider.value/100; });
 
+// ===== AUTO-ROLL TOGGLE =====
+document.getElementById('toggleAutoRoll').addEventListener('click',()=>{
+  if(autoRollInterval) stopAutoRoll();
+  else startAutoRoll();
+});
+
 // ===== ULEPSZENIA =====
 document.getElementById('shortenCooldown').addEventListener('click',()=>{
   if(coins>=50 && cooldown>500){ coins-=50; cooldown-=500; stopAutoRoll(); updateUI(); alert(`Cooldown skrócony! Teraz ${(cooldown/1000).toFixed(1)}s`);}
   else if(cooldown<=500) alert('Cooldown już minimalny!');
-  else alert('Nie masz wystarczająco monet!');
-});
-
-document.getElementById('removeCooldown').addEventListener('click',()=>{
-  if(coins>=2000){ coins-=2000; cooldown=0; startAutoRoll(); updateUI(); alert('Auto-Roll aktywny!'); }
   else alert('Nie masz wystarczająco monet!');
 });
 
