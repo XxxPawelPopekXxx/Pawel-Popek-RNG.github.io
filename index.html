@@ -183,6 +183,8 @@ let lastRoll = 0;
 let totalRolls = localStorage.getItem('totalRolls') !== null ? parseInt(localStorage.getItem('totalRolls')) : 0;
 let autoRollEnabled = localStorage.getItem('autoRollEnabled') !== null ? JSON.parse(localStorage.getItem('autoRollEnabled')) : false;
 let autoRollInterval = null;
+let playTime = localStorage.getItem('playTime') !== null ? parseInt(localStorage.getItem('playTime')) : 0;
+let playTimeStart = Date.now();
 
 // Play Time
 let playTime = localStorage.getItem('playTime') !== null ? parseInt(localStorage.getItem('playTime')) : 0;
@@ -341,9 +343,38 @@ resetYes.addEventListener('click', ()=>{
   location.reload();
 });
 
-// ===== ODŚWIEŻANIE COOLDOWN + PlayTime =====
-setInterval(()=>{ showCooldown(); updateUI(); },1000);
-updateUI();
+// ===== ODŚWIEŻANIE COOLDOWN =====
+setInterval(() => {
+  const now = Date.now();
+  const diff = lastRoll ? Math.max(0, cooldown - (now - lastRoll)) : 0;
+  document.getElementById('cooldownDisplay').textContent = `Cooldown: ${(diff/1000).toFixed(1)}s`;
+}, 100); // odświeżanie co 100ms, żeby cooldown był płynny
+
+// ===== ODŚWIEŻANIE UI + PlayTime =====
+setInterval(() => {
+  // Play Time wyświetlany
+  const elapsed = Math.floor((Date.now() - playTimeStart)/1000);
+  document.getElementById('statsPlayTime').textContent = (playTime + elapsed) + 's';
+
+  // reszta UI
+  document.getElementById('inventory').textContent = inventory.length?`Ekwipunek: ${inventory.join(', ')}`:'Ekwipunek: brak';
+  let historyHTML='';
+  for(const[key,val] of Object.entries(historyData)){
+    historyHTML+=`${key} (x${val})<br>`;
+  }
+  document.getElementById('history').innerHTML = historyHTML||'Historia losowań: brak';
+  document.getElementById('coins').textContent = coins;
+  document.getElementById('statsCoins').textContent = coins;
+  document.getElementById('statsRolls').textContent = totalRolls;
+}, 500); // UI odświeżane co 0.5s
+
+// ===== ZAPIS PLAY TIME CO 5s =====
+setInterval(() => {
+  const elapsed = Math.floor((Date.now() - playTimeStart)/1000);
+  playTime += elapsed;
+  playTimeStart = Date.now();
+  localStorage.setItem('playTime', playTime);
+}, 5000);
 </script>
 
 </body>
