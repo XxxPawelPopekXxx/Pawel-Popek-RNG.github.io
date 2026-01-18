@@ -114,8 +114,9 @@ button:active { transform: scale(0.9); }
 <h1>Paweł RNG - Mega Slot</h1>
 
 <div id="stats">
-  <div>Play Time: <span id="statsPlayTime">0s</span></div>
+  <div>Monety: <span id="statsCoins">0</span></div>
   <div>Autorzy: KoleszkaPP i its4iko</div>
+  <div>Play Time: <span id="statsPlayTime">0s</span></div>
   <div>Łączne losowania: <span id="statsRolls">0</span></div>
 </div>
 
@@ -184,13 +185,14 @@ let autoRollEnabled = localStorage.getItem('autoRollEnabled') !== null ? JSON.pa
 let autoRollInterval = null;
 
 // Play Time
-let savedPlayTime = localStorage.getItem('playTime') !== null ? parseInt(localStorage.getItem('playTime')) : 0;
-let startTime = Date.now();
+let playTime = localStorage.getItem('playTime') !== null ? parseInt(localStorage.getItem('playTime')) : 0;
+let playTimeStart = Date.now();
 
 // ===== FUNKCJE =====
 function updateUI(){
-  let currentPlayTime = savedPlayTime + Math.floor((Date.now() - startTime)/1000);
-  document.getElementById('statsPlayTime').textContent = currentPlayTime + 's';
+  // aktualizacja Play Time
+  const elapsed = Math.floor((Date.now() - playTimeStart)/1000);
+  document.getElementById('statsPlayTime').textContent = (playTime + elapsed) + 's';
 
   document.getElementById('inventory').textContent = inventory.length?`Ekwipunek: ${inventory.join(', ')}`:'Ekwipunek: brak';
   
@@ -201,16 +203,17 @@ function updateUI(){
   document.getElementById('history').innerHTML = historyHTML||'Historia losowań: brak';
   
   document.getElementById('coins').textContent = coins;
+  document.getElementById('statsCoins').textContent = coins;
   document.getElementById('statsRolls').textContent = totalRolls;
 
+  // zapis do localStorage
   localStorage.setItem('coins',coins);
   localStorage.setItem('inventory',JSON.stringify(inventory));
   localStorage.setItem('historyData',JSON.stringify(historyData));
   localStorage.setItem('cooldown',cooldown);
   localStorage.setItem('totalRolls', totalRolls);
   localStorage.setItem('autoRollEnabled', autoRollEnabled);
-  localStorage.setItem('playTime', savedPlayTime + Math.floor((Date.now() - startTime)/1000));
-  startTime = Date.now();
+  localStorage.setItem('playTime', playTime + elapsed);
 }
 
 function showCooldown(){
@@ -239,7 +242,7 @@ function rollRNG(showRareAnimationOnly=false){
   const chanceElem=document.getElementById('chanceText');
   const rarityElem=document.getElementById('rarityText');
 
-  let elapsed=0;
+  let elapsedAnim=0;
   const animSpeed=50;
   const totalDuration=1000;
   const interval=setInterval(()=>{
@@ -259,8 +262,8 @@ function rollRNG(showRareAnimationOnly=false){
       imgElem.style.filter='brightness(1)';
     }
 
-    elapsed+=animSpeed;
-    if(elapsed>=totalDuration){
+    elapsedAnim+=animSpeed;
+    if(elapsedAnim>=totalDuration){
       clearInterval(interval);
       const selected=entries[Math.floor(Math.random()*entries.length)];
       imgElem.src=selected.src;
@@ -338,8 +341,8 @@ resetYes.addEventListener('click', ()=>{
   location.reload();
 });
 
-// ===== ODŚWIEŻANIE COOLDOWN =====
-setInterval(showCooldown,100);
+// ===== ODŚWIEŻANIE COOLDOWN + PlayTime =====
+setInterval(()=>{ showCooldown(); updateUI(); },1000);
 updateUI();
 </script>
 
