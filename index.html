@@ -185,6 +185,93 @@ button:active { transform: scale(0.9); }
 // --- Twój JS pozostaje bez zmian ---
 // dodaję tylko drobne poprawki dla sklepu (usunięto duplikaty i naprawiono wyśrodkowanie)
 </script>
+<script>
+// Dane obrazków
+const images = [
+  {src: 'photo.png', text: 'gejmingowy paweł', chance: 1/2, rarity: 'Common'},
+  {src: 'photo2.png', text: 'paweł prezydent', chance: 1/4, rarity: 'Uncommon'},
+  {src: 'photo3.png', text: 'pawel w zoltym hoodie', chance: 1/8, rarity: 'Rare'},
+  {src: 'photo4.png', text: 'funni paweł', chance: 1/16, rarity: 'Epic'},
+  {src: 'photo5.png', text: 'paweł ok', chance: 1/32, rarity: 'Mythic'},
+  {src: 'photo6.png', text: 'świąteczny paweł', chance: 1/64, rarity: 'Legendary'},
+  {src: 'photo7.png', text: 'paweł dostaje backshoty', chance: 1/128, rarity: 'Ultra Legendary'},
+  {src: 'photo8.png', text: 'paweł komunista', chance: 1/256, rarity: 'Ultra Legendary'}
+];
 
+let coins = 0;
+let luckMultiplier = 1;
+let cooldown = 2.0;
+let canRoll = true;
+
+// Muzyka
+const musicFiles = ['music.mp3', 'music2.mp3', 'music3.mp3', 'music4.mp3', 'music5.mp3'];
+const bgMusic = document.getElementById('backgroundMusic');
+function playRandomMusic(){
+  const randomMusic = musicFiles[Math.floor(Math.random()*musicFiles.length)];
+  bgMusic.src = randomMusic;
+  bgMusic.play();
+}
+playRandomMusic();
+
+// Mute/Unmute
+document.getElementById('muteButton').addEventListener('click', ()=>{
+  bgMusic.muted = !bgMusic.muted;
+});
+
+// Funkcja losowania
+function rollRNG(){
+  if(!canRoll) return;
+  canRoll = false;
+  const btn = document.getElementById('rollButton');
+  btn.style.transform = 'scale(0.8)';
+  setTimeout(()=>btn.style.transform='scale(1)', 250);
+
+  // RNG z uwzględnieniem luck
+  const pool = [];
+  images.forEach(img=>{
+    const count = Math.floor(img.chance * 256 * luckMultiplier);
+    for(let i=0;i<count;i++) pool.push(img);
+  });
+  const selected = pool[Math.floor(Math.random()*pool.length)];
+  document.getElementById('resultImage').src = selected.src;
+  document.getElementById('resultText').textContent = selected.text;
+  document.getElementById('chanceText').textContent = `Szansa: 1/${1/selected.chance}`;
+  document.getElementById('rarityText').textContent = `Rzadkość: ${selected.rarity}`;
+  coins += 10; // za przykład
+  document.getElementById('coins').textContent = coins;
+
+  // Cooldown
+  let remaining = cooldown;
+  const cdDisplay = document.getElementById('cooldownDisplay');
+  cdDisplay.textContent = `Cooldown: ${remaining.toFixed(1)}s`;
+  const interval = setInterval(()=>{
+    remaining -= 0.1;
+    if(remaining<=0){
+      clearInterval(interval);
+      canRoll = true;
+      cdDisplay.textContent = `Cooldown: 0s`;
+    } else {
+      cdDisplay.textContent = `Cooldown: ${remaining.toFixed(1)}s`;
+    }
+  },100);
+}
+
+// Roll button
+document.getElementById('rollButton').addEventListener('click', rollRNG);
+
+// Sklep
+const shopOverlay = document.getElementById('shopOverlay');
+function openShop(){ shopOverlay.classList.add('active'); }
+function closeShop(){ shopOverlay.classList.remove('active'); }
+document.getElementById('openShop').addEventListener('click', openShop);
+
+// Funkcja kupowania
+function buyShopItem(type){
+  if(coins<1000){ alert("Nie masz monet!"); return; } // przykład
+  coins -= 1000;
+  document.getElementById('coins').textContent = coins;
+  alert("Kupiono: "+type);
+}
+</script>
 </body>
 </html>
