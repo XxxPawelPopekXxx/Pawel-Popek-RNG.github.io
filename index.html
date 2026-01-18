@@ -115,6 +115,7 @@ button {
   <div>Monety: <span id="statsCoins">0</span></div>
   <div>Przedmioty: <span id="statsItems">0</span></div>
   <div>Łączne losowania: <span id="statsRolls">0</span></div>
+  <div>Cooldown: <span id="statsCooldown">3.0</span>s</div>
 </div>
 
 <button id="rollButton">Roll</button>
@@ -178,7 +179,7 @@ let musicStarted = false;
 let coins = parseInt(localStorage.getItem('coins'))||0;
 let inventory = JSON.parse(localStorage.getItem('inventory'))||[];
 let historyData = JSON.parse(localStorage.getItem('historyData'))||{};
-let cooldown = parseInt(localStorage.getItem('cooldown'))||1000; 
+let cooldown = parseFloat(localStorage.getItem('cooldown'))||3.0; // start 3s
 let lastRoll = 0;
 let totalRolls = parseInt(localStorage.getItem('totalRolls'))||0;
 let autoRollInterval = null;
@@ -201,18 +202,19 @@ function updateUI(){
   document.getElementById('statsCoins').textContent = coins;
   document.getElementById('statsItems').textContent = inventory.length;
   document.getElementById('statsRolls').textContent = totalRolls;
+  document.getElementById('statsCooldown').textContent = cooldown.toFixed(1);
 }
 
 function showCooldown(){
   const now=Date.now();
-  const diff=lastRoll?Math.max(0,cooldown-(now-lastRoll)):0;
+  const diff=lastRoll?Math.max(0,(cooldown*1000)-(now-lastRoll)):0;
   document.getElementById('cooldownDisplay').textContent=`Cooldown: ${(diff/1000).toFixed(1)}s`;
 }
 
 // ===== SLOT MEGA =====
 function rollRNG(){
   const now=Date.now();
-  if(now-lastRoll<cooldown) return;
+  if(now-lastRoll<(cooldown*1000)) return;
   lastRoll=now;
   totalRolls++;
 
@@ -247,7 +249,7 @@ function rollRNG(){
       const selected=finalPool[Math.floor(Math.random()*finalPool.length)];
       imgElem.src=selected.src;
       textElem.textContent=selected.text;
-      chanceElem.textContent=`Szansa: 1/${selected.chance>=1?1:selected.chance<1?Math.round(1/selected.chance):0}`;
+      chanceElem.textContent=`Szansa: 1/${selected.chance>=1?1:Math.round(1/selected.chance)}`;
       rarityElem.textContent=`Rzadkość: ${selected.rarity}`;
       let reward=selected.reward;
       if(inventory.length>0) reward=Math.floor(reward*(1+0.05*inventory.length));
@@ -317,8 +319,13 @@ document.getElementById('toggleAutoRoll').addEventListener('click',()=>{
 
 // ===== ULEPSZENIA =====
 document.getElementById('shortenCooldown').addEventListener('click',()=>{
-  if(coins>=50 && cooldown>1000){ coins-=50; cooldown-=500; stopAutoRoll(); updateUI(); alert(`Cooldown skrócony! Teraz ${(cooldown/1000).toFixed(1)}s`);}
-  else if(cooldown<=1000) alert('Cooldown już minimalny!');
+  if(coins>=50 && cooldown>1.0){ 
+      coins-=50; 
+      cooldown = Math.max(1.0, cooldown-0.5); 
+      stopAutoRoll(); 
+      updateUI(); 
+      alert(`Cooldown skrócony! Teraz ${(cooldown).toFixed(1)}s`);
+  } else if(cooldown<=1.0) alert('Cooldown już minimalny (1s)!');
   else alert('Nie masz wystarczająco monet!');
 });
 
@@ -348,7 +355,7 @@ document.getElementById('resetYes').addEventListener('click',()=>{
   coins=0;
   inventory=[];
   historyData={};
-  cooldown=1000;
+  cooldown=3.0;
   totalRolls=0;
   lastRoll=0;
   stopAutoRoll();
