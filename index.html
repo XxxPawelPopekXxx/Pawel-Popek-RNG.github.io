@@ -72,13 +72,12 @@ button:active { transform: scale(0.9); }
 
 /* Reset progress duży komunikat */
 #resetOverlay {
-  display: none;
+  display: none; /* ukryty na starcie */
   position: fixed;
   top:0; left:0; width:100%; height:100%;
   background: rgba(0,0,0,0.8);
   z-index: 999;
   color: white;
-  display: flex;
   justify-content: center;
   align-items: center;
 }
@@ -97,6 +96,17 @@ button:active { transform: scale(0.9); }
 /* Suwak głośności */
 #volumeControl { margin-top: 15px; }
 
+#resetProgress {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  background-color: #f44336;
+  color: white;
+  padding: 10px 15px;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+}
 </style>
 </head>
 <body>
@@ -179,27 +189,20 @@ let startTime = Date.now();
 
 // ===== FUNKCJE =====
 function updateUI(){
-  // Play Time
   let currentPlayTime = savedPlayTime + Math.floor((Date.now() - startTime)/1000);
   document.getElementById('statsPlayTime').textContent = currentPlayTime + 's';
 
-  // Inventory
   document.getElementById('inventory').textContent = inventory.length?`Ekwipunek: ${inventory.join(', ')}`:'Ekwipunek: brak';
   
-  // Historia losowań
   let historyHTML='';
   for(const[key,val] of Object.entries(historyData)){
     historyHTML+=`${key} (x${val})<br>`;
   }
   document.getElementById('history').innerHTML = historyHTML||'Historia losowań: brak';
   
-  // Dolny panel monet
   document.getElementById('coins').textContent = coins;
-
-  // Łączne losowania
   document.getElementById('statsRolls').textContent = totalRolls;
 
-  // Zapis do LocalStorage
   localStorage.setItem('coins',coins);
   localStorage.setItem('inventory',JSON.stringify(inventory));
   localStorage.setItem('historyData',JSON.stringify(historyData));
