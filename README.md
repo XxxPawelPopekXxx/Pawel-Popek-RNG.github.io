@@ -1,2 +1,1 @@
-# Paweł-Popek-RNG
-Sigmastyczny symulator❤️
+sigmastyczny symulator dla sigiemek❤️
