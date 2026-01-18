@@ -193,7 +193,10 @@ images.forEach(img=>{
   const totalDuration=1000;
   const interval=setInterval(()=>{
     let temp;
-    do{ temp = images[Math.floor(Math.random()*images.length)]; }while(showRareAnimationOnly && temp.text==='Śledziu' && !inventory.includes('Tajemniczy Przedmiot'));
+    do {
+  temp = images[Math.floor(Math.random()*images.length)];
+} while (temp.text === 'Śledziu');
+
 
     imgElem.src=temp.src;
     textElem.textContent=temp.text;
@@ -210,7 +213,12 @@ images.forEach(img=>{
       const selected=entries[Math.floor(Math.random()*entries.length)];
       imgElem.src=selected.src;
       textElem.textContent=selected.text;
-      chanceElem.textContent=`Szansa: 1/${Math.round(1/selected.chance)}`;
+      if (selected.chance <= 0) {
+  chanceElem.textContent = 'Szansa: ???';
+} else {
+  chanceElem.textContent = `Szansa: 1/${Math.round(1 / selected.chance)}`;
+}
+
       rarityElem.textContent=`Rzadkość: ${selected.rarity}`;
       let reward=selected.reward;
       if(inventory.length>0) reward=Math.floor(reward*(1+0.05*inventory.length));
@@ -292,12 +300,6 @@ setInterval(()=>{
   localStorage.setItem('playTime',playTime);
 },5000);
 
-// ===== LOSOWA MUZYKA PO KONCU =====
-bgMusic.addEventListener('ended',()=>{
-    const randomMusic = musicFiles[Math.floor(Math.random()*musicFiles.length)];
-    bgMusic.src = randomMusic;
-    bgMusic.play().catch(err=>console.log(err));
-});
 </script>
 </body>
 </html>
