@@ -60,7 +60,6 @@ button {
   background-color: #222;
 }
 
-/* Statystyki w prawym górnym rogu */
 #stats {
   position: fixed;
   top: 10px;
@@ -70,8 +69,14 @@ button {
   padding: 10px;
   border-radius: 10px;
   text-align: left;
-  width: 200px;
+  width: 220px;
   font-size: 0.9em;
+}
+
+/* Suwak głośności */
+#volumeControl {
+  width: 150px;
+  margin: 10px auto;
 }
 </style>
 </head>
@@ -93,6 +98,10 @@ button {
 <div id="rarityText"></div>
 
 <button id="muteButton">Mute/Unmute</button>
+<div>
+  Głośność: <input type="range" id="volumeControl" min="1" max="100" value="50">
+</div>
+
 <div id="currency">Monety: <span id="coins">0</span></div>
 
 <div id="upgrades">
@@ -148,7 +157,6 @@ function updateUI(){
   localStorage.setItem('cooldown',cooldown);
   localStorage.setItem('totalRolls', totalRolls);
 
-  // Aktualizacja statystyk
   document.getElementById('statsCoins').textContent = coins;
   document.getElementById('statsItems').textContent = inventory.length;
   document.getElementById('statsRolls').textContent = totalRolls;
@@ -167,13 +175,9 @@ function rollRNG(){
   lastRoll=now;
   totalRolls++;
 
-  const entries=[];
-  images.forEach(img=>{
-    if(img.requiresItem && !inventory.includes(img.requiresItem)) return;
-    let count = Math.floor(img.chance*1000);
-    if(inventory.length>0) count=Math.floor(count*1.05);
-    for(let i=0;i<count;i++) entries.push(img);
-  });
+  // Tworzymy pulę do animacji bez "Śledziu"
+  const animPool = images.filter(img => !img.requiresItem || (img.requiresItem && img.text!=='Śledziu'));
+  const finalPool = images.filter(img => !img.requiresItem || inventory.includes(img.requiresItem));
 
   const imgElem=document.getElementById('resultImage');
   const textElem=document.getElementById('resultText');
@@ -184,8 +188,7 @@ function rollRNG(){
   const animSpeed=50;
   const totalDuration=1000;
   const interval=setInterval(()=>{
-    const temp=images[Math.floor(Math.random()*images.length)];
-    if(temp.requiresItem && !inventory.includes(temp.requiresItem)) return;
+    const temp=animPool[Math.floor(Math.random()*animPool.length)];
     imgElem.src=temp.src;
     textElem.textContent=temp.text;
     chanceElem.textContent=`Szansa: 1/${Math.round(1/temp.chance)}`;
@@ -201,7 +204,7 @@ function rollRNG(){
     elapsed+=animSpeed;
     if(elapsed>=totalDuration){
       clearInterval(interval);
-      const selected=entries[Math.floor(Math.random()*entries.length)];
+      const selected=finalPool[Math.floor(Math.random()*finalPool.length)];
       imgElem.src=selected.src;
       textElem.textContent=selected.text;
       chanceElem.textContent=`Szansa: 1/${Math.round(1/selected.chance)}`;
@@ -211,8 +214,24 @@ function rollRNG(){
       coins+=reward;
       if(historyData[selected.text]) historyData[selected.text]++;
       else historyData[selected.text]=1;
-      imgElem.style.transform='scale(1) rotate(0deg)';
-      imgElem.style.filter='brightness(1)';
+
+      // Specjalna animacja jeśli wylosowano Śledziu
+      if(selected.text==='Śledziu'){
+        let flashCount = 0;
+        const flashInterval = setInterval(()=>{
+          imgElem.style.transform = `scale(${1+0.1*Math.random()}) rotate(${(Math.random()-0.5)*30}deg)`;
+          imgElem.style.filter = `brightness(${1+Math.random()*1})`;
+          flashCount++;
+          if(flashCount>10){
+            clearInterval(flashInterval);
+            imgElem.style.transform='scale(1) rotate(0deg)';
+            imgElem.style.filter='brightness(1)';
+          }
+        },100);
+      } else {
+        imgElem.style.transform='scale(1) rotate(0deg)';
+        imgElem.style.filter='brightness(1)';
+      }
       updateUI();
     }
   },animSpeed);
@@ -240,6 +259,12 @@ document.getElementById('rollButton').addEventListener('click', async () => {
 
 // ===== MUTE =====
 document.getElementById('muteButton').addEventListener('click',()=>{ bgMusic.muted=!bgMusic.muted; });
+
+// ===== SUWAK GŁOŚNOŚCI =====
+const volumeSlider = document.getElementById('volumeControl');
+volumeSlider.addEventListener('input',()=>{
+    bgMusic.volume = volumeSlider.value/100;
+});
 
 // ===== ULEPSZENIA =====
 document.getElementById('shortenCooldown').addEventListener('click',()=>{
