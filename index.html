@@ -211,6 +211,37 @@ button:active { transform: scale(0.9); }
 .codeHistory h3 { color:#673AB7; margin-top:0; }
 .codeHistoryItem { padding:8px; margin:5px 0; background:#444; border-radius:5px; border-left:3px solid #4CAF50; }
 
+#inventoryButton { background-color:#00BCD4; color:white; margin-top:10px; }
+#inventoryOverlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:1000; justify-content:center; align-items:center; }
+#inventoryBox { background:#1a1a1a; padding:20px; border-radius:15px; width:700px; max-height:80vh; overflow-y:auto; border:3px solid #00BCD4; box-shadow:0 0 30px rgba(0,188,212,0.5); }
+#inventoryBox h2 { color:#00BCD4; margin-top:0; text-align:center; font-size:2em; text-transform:uppercase; letter-spacing:2px; }
+.inventoryTabs { display:flex; gap:10px; margin-bottom:20px; border-bottom:2px solid #333; }
+.inventoryTab { flex:1; padding:15px; background:#222; color:#aaa; border:none; border-radius:10px 10px 0 0; cursor:pointer; font-size:1.1em; transition:all 0.3s; border-bottom:3px solid transparent; }
+.inventoryTab.active { background:#2a2a2a; color:#00BCD4; border-bottom-color:#00BCD4; }
+.inventoryTab:hover { background:#2a2a2a; }
+.inventorySection { display:none; }
+.inventorySection.active { display:block; }
+.inventoryGrid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:15px; margin-top:20px; }
+.inventoryItem { background:#2a2a2a; border:2px solid #444; border-radius:10px; padding:15px; text-align:center; cursor:pointer; transition:all 0.3s; position:relative; }
+.inventoryItem:hover { border-color:#00BCD4; transform:translateY(-3px); box-shadow:0 5px 15px rgba(0,188,212,0.3); }
+.inventoryItem.equipped { border-color:#4CAF50; background:#1a3a1a; }
+.inventoryItem.equipped::after { content:'✓ ZAŁOŻONY'; position:absolute; top:5px; right:5px; background:#4CAF50; color:white; padding:3px 8px; border-radius:5px; font-size:0.7em; }
+.inventoryItem .itemIcon { font-size:3em; margin-bottom:10px; }
+.inventoryItem .itemName { color:#00BCD4; font-weight:bold; font-size:1.1em; margin:10px 0; }
+.inventoryItem .itemRarity { color:#FFD700; font-size:0.9em; }
+.emptySlot { background:#1a1a1a; border:2px dashed #444; border-radius:10px; padding:40px 15px; text-align:center; color:#666; }
+#itemDetailOverlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1001; justify-content:center; align-items:center; }
+#itemDetailBox { background:#222; padding:30px; border-radius:15px; width:400px; border:2px solid #00BCD4; text-align:center; }
+#itemDetailBox .itemIcon { font-size:5em; margin-bottom:20px; }
+#itemDetailBox .itemName { color:#00BCD4; font-size:2em; font-weight:bold; margin-bottom:10px; }
+#itemDetailBox .itemRarity { color:#FFD700; font-size:1.2em; margin-bottom:20px; }
+#itemDetailBox .itemDescription { color:#aaa; font-size:1.1em; line-height:1.6; margin:20px 0; padding:20px; background:#1a1a1a; border-radius:10px; border-left:3px solid #00BCD4; }
+#equipButton { background-color:#4CAF50; color:white; padding:15px 30px; border:none; border-radius:10px; cursor:pointer; font-size:1.1em; margin:10px; width:80%; }
+#equipButton:hover { background-color:#45a049; }
+#equipButton:disabled { background-color:#666; cursor:not-allowed; }
+#closeItemDetail { background-color:#f44336; color:white; padding:12px 25px; border:none; border-radius:10px; cursor:pointer; font-size:1em; margin-top:10px; width:80%; }
+#closeInventory { background-color:#f44336; color:white; padding:12px 30px; border:none; border-radius:10px; cursor:pointer; font-size:1.1em; margin-top:20px; width:100%; }
+
 /* Custom Popup */
 .custom-popup { 
   position: fixed; 
@@ -260,6 +291,7 @@ button:active { transform: scale(0.9); }
 <button id="shopButton">🛒 SKLEP</button>
 <button id="questsButton">📋 QUESTY</button>
 <button id="codesButton">🎁 KODY</button>
+<button id="inventoryButton">🎒 EKWIPUNEK</button>
 
 <div id="upgrades">
   <button class="upgradeButton" id="shortenCooldown">Skróć cooldown (-0.5s) 50 monet</button>
@@ -268,7 +300,6 @@ button:active { transform: scale(0.9); }
   <button class="upgradeButton disabled" id="toggleAutoRoll">Kup Auto-Roll 5000 monet</button>
 </div>
 
-<div id="inventory">Ekwipunek: brak</div>
 <div id="history">Historia losowań:</div>
 
 <div id="resetProgress">RESET PROGRESS</div>
@@ -410,6 +441,44 @@ button:active { transform: scale(0.9); }
   </div>
 </div>
 
+<!-- Inventory overlay -->
+<div id="inventoryOverlay">
+  <div id="inventoryBox">
+    <h2>🎒 EKWIPUNEK</h2>
+    
+    <div class="inventoryTabs">
+      <button class="inventoryTab active" id="itemsTab">Items</button>
+      <button class="inventoryTab" id="gearsTab">Gears</button>
+    </div>
+    
+    <div class="inventorySection active" id="itemsSection">
+      <div class="inventoryGrid" id="itemsGrid">
+        <!-- Items będą tutaj generowane dynamicznie -->
+      </div>
+    </div>
+    
+    <div class="inventorySection" id="gearsSection">
+      <div class="inventoryGrid" id="gearsGrid">
+        <!-- Gears będą tutaj generowane dynamicznie -->
+      </div>
+    </div>
+    
+    <button id="closeInventory">Zamknij</button>
+  </div>
+</div>
+
+<!-- Item Detail overlay -->
+<div id="itemDetailOverlay">
+  <div id="itemDetailBox">
+    <div class="itemIcon" id="detailIcon">📦</div>
+    <div class="itemName" id="detailName">Nazwa przedmiotu</div>
+    <div class="itemRarity" id="detailRarity">Rzadkość</div>
+    <button id="equipButton" style="display:none;">Załóż</button>
+    <div class="itemDescription" id="detailDescription">Opis przedmiotu</div>
+    <button id="closeItemDetail">Zamknij</button>
+  </div>
+</div>
+
 <div id="chanceList"></div>
 
 <audio id="backgroundMusic"></audio>
@@ -483,6 +552,9 @@ let ownedShopItems = localStorage.getItem('ownedShopItems') ? JSON.parse(localSt
 let cooldownUpgrades = localStorage.getItem('cooldownUpgrades') !== null ? parseInt(localStorage.getItem('cooldownUpgrades')) : 0;
 let chanceUpgrades = localStorage.getItem('chanceUpgrades') !== null ? parseInt(localStorage.getItem('chanceUpgrades')) : 0;
 let totalCoinsEarned = localStorage.getItem('totalCoinsEarned') !== null ? parseInt(localStorage.getItem('totalCoinsEarned')) : coins;
+
+// Ekwipunek
+let equippedGear = localStorage.getItem('equippedGear') || null;
 
 // Questy
 let quests = localStorage.getItem('quests') ? JSON.parse(localStorage.getItem('quests')) : [
@@ -585,8 +657,6 @@ function updateQuestsUI() {
 }
 
 function updateUI(fromRoll = false){
-  document.getElementById('inventory').textContent = inventory.length?`Ekwipunek: ${inventory.join(', ')}`:'Ekwipunek: brak';
-
   let historyHTML='';
   for(const[key,val] of Object.entries(historyData)){
     historyHTML+=`${key} (x${val})<br>`;
@@ -912,15 +982,13 @@ document.getElementById('buyLuckyPawel').addEventListener('click', () => {
     historyData['gejmingowy paweł'] -= 20;
     historyData['paweł prezydent'] -= 10;
     coins -= 1000;
-    luckMultiplier *= 1.5;
     ownedShopItems.push('Lucky Pawel');
     
-    localStorage.setItem('luckMultiplier', luckMultiplier);
     localStorage.setItem('ownedShopItems', JSON.stringify(ownedShopItems));
     
     updateUI();
     updateShopUI();
-    showPopup('🍀 Lucky Pawel zakupiony! Mnożnik: ' + luckMultiplier.toFixed(2) + 'x', 'success');
+    showPopup('🍀 Lucky Pawel zakupiony! Możesz go założyć w ekwipunku.', 'success');
   } else {
     showPopup('Brak wymaganych zasobów!', 'error');
   }
@@ -934,15 +1002,13 @@ document.getElementById('buyMegaPawel').addEventListener('click', () => {
     historyData['pawel w zoltym hoodie'] -= 25;
     historyData['funni paweł'] -= 15;
     coins -= 2500;
-    luckMultiplier *= 2;
     ownedShopItems.push('Mega Pawel');
     
-    localStorage.setItem('luckMultiplier', luckMultiplier);
     localStorage.setItem('ownedShopItems', JSON.stringify(ownedShopItems));
     
     updateUI();
     updateShopUI();
-    showPopup('💎 Mega Pawel zakupiony! Mnożnik: ' + luckMultiplier.toFixed(2) + 'x', 'success');
+    showPopup('💎 Mega Pawel zakupiony! Możesz go założyć w ekwipunku.', 'success');
   } else {
     showPopup('Brak wymaganych zasobów!', 'error');
   }
@@ -960,15 +1026,13 @@ document.getElementById('buyUltimatePawel').addEventListener('click', () => {
     historyData['paweł dostaje backshoty'] -= 2;
     historyData['paweł komunista'] -= 1;
     coins -= 5000;
-    luckMultiplier *= 3;
     ownedShopItems.push('Ultimate Pawel');
     
-    localStorage.setItem('luckMultiplier', luckMultiplier);
     localStorage.setItem('ownedShopItems', JSON.stringify(ownedShopItems));
     
     updateUI();
     updateShopUI();
-    showPopup('👑 Ultimate Pawel zakupiony! Mnożnik: ' + luckMultiplier.toFixed(2) + 'x', 'success');
+    showPopup('👑 Ultimate Pawel zakupiony! Możesz go założyć w ekwipunku.', 'success');
   } else {
     showPopup('Brak wymaganych zasobów!', 'error');
   }
@@ -1030,6 +1094,141 @@ submitCode.addEventListener('click', () => {
   } else {
     showPopup('Nieprawidłowy kod!', 'error');
   }
+});
+
+// ===== EKWIPUNEK =====
+const inventoryOverlay = document.getElementById('inventoryOverlay');
+const inventoryButton = document.getElementById('inventoryButton');
+const closeInventory = document.getElementById('closeInventory');
+const itemsTab = document.getElementById('itemsTab');
+const gearsTab = document.getElementById('gearsTab');
+const itemsSection = document.getElementById('itemsSection');
+const gearsSection = document.getElementById('gearsSection');
+const itemDetailOverlay = document.getElementById('itemDetailOverlay');
+const closeItemDetail = document.getElementById('closeItemDetail');
+const equipButton = document.getElementById('equipButton');
+
+const gearData = {
+  'Lucky Pawel': { icon: '🍀', multiplier: 1.5, description: 'Mnożnik szczęścia: 1.5x' },
+  'Mega Pawel': { icon: '💎', multiplier: 2, description: 'Mnożnik szczęścia: 2x' },
+  'Ultimate Pawel': { icon: '👑', multiplier: 3, description: 'Mnożnik szczęścia: 3x' }
+};
+
+function updateInventoryUI() {
+  // Items section
+  const itemsGrid = document.getElementById('itemsGrid');
+  itemsGrid.innerHTML = '';
+  
+  if(inventory.includes('Tajemniczy Przedmiot')) {
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'inventoryItem';
+    itemDiv.innerHTML = `
+      <div class="itemIcon">📦</div>
+      <div class="itemName">Tajemniczy Przedmiot</div>
+      <div class="itemRarity">Unikalny</div>
+    `;
+    itemDiv.addEventListener('click', () => showItemDetail('Tajemniczy Przedmiot', '📦', 'Unikalny', 'Ten przedmiot pozwala na zdobycie rzeczy jeszcze niesłyszanych...', false));
+    itemsGrid.appendChild(itemDiv);
+  } else {
+    itemsGrid.innerHTML = '<div class="emptySlot">Brak przedmiotów</div>';
+  }
+  
+  // Gears section
+  const gearsGrid = document.getElementById('gearsGrid');
+  gearsGrid.innerHTML = '';
+  
+  let hasGears = false;
+  ownedShopItems.forEach(gearName => {
+    if(gearData[gearName]) {
+      hasGears = true;
+      const gear = gearData[gearName];
+      const isEquipped = equippedGear === gearName;
+      
+      const gearDiv = document.createElement('div');
+      gearDiv.className = 'inventoryItem' + (isEquipped ? ' equipped' : '');
+      gearDiv.innerHTML = `
+        <div class="itemIcon">${gear.icon}</div>
+        <div class="itemName">${gearName}</div>
+        <div class="itemRarity">Gear</div>
+      `;
+      gearDiv.addEventListener('click', () => showItemDetail(gearName, gear.icon, 'Gear', gear.description, true));
+      gearsGrid.appendChild(gearDiv);
+    }
+  });
+  
+  if(!hasGears) {
+    gearsGrid.innerHTML = '<div class="emptySlot">Brak gearów<br><small>Kup je w sklepie!</small></div>';
+  }
+}
+
+function showItemDetail(name, icon, rarity, description, isGear) {
+  document.getElementById('detailIcon').textContent = icon;
+  document.getElementById('detailName').textContent = name;
+  document.getElementById('detailRarity').textContent = rarity;
+  document.getElementById('detailDescription').textContent = description;
+  
+  if(isGear) {
+    equipButton.style.display = 'block';
+    const isEquipped = equippedGear === name;
+    equipButton.textContent = isEquipped ? '✓ Założony' : 'Załóż';
+    equipButton.disabled = isEquipped;
+    equipButton.onclick = () => equipGear(name);
+  } else {
+    equipButton.style.display = 'none';
+  }
+  
+  itemDetailOverlay.style.display = 'flex';
+}
+
+function equipGear(gearName) {
+  // Jeśli coś jest założone, zdejmij mnożnik
+  if(equippedGear && gearData[equippedGear]) {
+    luckMultiplier /= gearData[equippedGear].multiplier;
+  }
+  
+  // Załóż nowy gear
+  equippedGear = gearName;
+  luckMultiplier *= gearData[gearName].multiplier;
+  
+  localStorage.setItem('equippedGear', equippedGear);
+  localStorage.setItem('luckMultiplier', luckMultiplier);
+  
+  updateUI();
+  updateInventoryUI();
+  itemDetailOverlay.style.display = 'none';
+  showPopup(`${gearName} założony! Mnożnik: ${luckMultiplier.toFixed(2)}x`, 'success');
+}
+
+inventoryButton.addEventListener('click', () => {
+  updateInventoryUI();
+  inventoryOverlay.style.display = 'flex';
+  // Reset to items tab
+  itemsTab.classList.add('active');
+  gearsTab.classList.remove('active');
+  itemsSection.classList.add('active');
+  gearsSection.classList.remove('active');
+});
+
+closeInventory.addEventListener('click', () => {
+  inventoryOverlay.style.display = 'none';
+});
+
+itemsTab.addEventListener('click', () => {
+  itemsTab.classList.add('active');
+  gearsTab.classList.remove('active');
+  itemsSection.classList.add('active');
+  gearsSection.classList.remove('active');
+});
+
+gearsTab.addEventListener('click', () => {
+  gearsTab.classList.add('active');
+  itemsTab.classList.remove('active');
+  gearsSection.classList.add('active');
+  itemsSection.classList.remove('active');
+});
+
+closeItemDetail.addEventListener('click', () => {
+  itemDetailOverlay.style.display = 'none';
 });
 
 // ===== MENU =====
@@ -1126,6 +1325,13 @@ if(autoRollPurchased) {
 } else {
   autoRollButton.textContent = 'Kup Auto-Roll 5000 monet';
   autoRollButton.classList.add('disabled');
+}
+
+// Przywróć equipped gear przy starcie
+if(equippedGear && gearData[equippedGear] && !ownedShopItems.includes(equippedGear)) {
+  // Jeśli gear jest wyposażony ale już nie posiadany (reset?), usuń go
+  equippedGear = null;
+  localStorage.removeItem('equippedGear');
 }
 
 // Przywróć auto-roll jeśli było włączone
