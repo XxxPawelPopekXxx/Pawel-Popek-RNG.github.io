@@ -245,8 +245,7 @@ function showPopup(message, type = 'success') {
 
 // ===== FUNKCJE =====
 function updateUI(){
-  const elapsed = Math.floor((Date.now()-playTimeStart)/1000);
-  document.getElementById('statsPlayTime').textContent = (playTime+elapsed)+'s';
+  document.getElementById('statsPlayTime').textContent = playTime+'s';
   document.getElementById('inventory').textContent = inventory.length?`Ekwipunek: ${inventory.join(', ')}`:'Ekwipunek: brak';
 
   let historyHTML='';
@@ -594,16 +593,15 @@ document.getElementById('buyUltimatePawel').addEventListener('click', () => {
     showPopup('Brak wymaganych zasobów!', 'error');
   }
 });
-
-// ===== AUTO-SAVE =====
+// ===== AUTO-SAVE & PLAYTIME UPDATE =====
 setInterval(()=>{
-  const elapsed = Math.floor((Date.now() - playTimeStart) / 1000);
-  playTime += elapsed;
-  playTimeStart = Date.now();
+  playTime += 1; // Dodaj 1 sekundę
+  document.getElementById('statsPlayTime').textContent = playTime+'s'; // Aktualizuj UI
   localStorage.setItem('playTime', playTime);
-  localStorage.setItem('playTimeStart', playTimeStart);
   localStorage.setItem('autoRollEnabled', autoRollEnabled);
 }, 1000);
+
+
 // ===== INIT =====
 updateUI();
 
