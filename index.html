@@ -37,6 +37,19 @@ button:active { transform: scale(0.9); }
 
 #resetProgress { position:fixed; bottom:10px; left:10px; background-color:#f44336; color:white; padding:10px 15px; border-radius:10px; font-weight:bold; cursor:pointer; }
 #chanceList { margin-top:10px; font-size:0.9em; color:#ccc; text-align:left; max-width:250px; margin-left:auto; margin-right:auto; }
+
+#shopButton { background-color:#FF9800; color:white; margin-top:10px; }
+#shopOverlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); z-index:1000; justify-content:center; align-items:center; }
+#shopBox { background:#222; padding:30px; border-radius:15px; max-width:600px; max-height:80vh; overflow-y:auto; border:2px solid #FF9800; }
+#shopBox h2 { color:#FF9800; margin-top:0; }
+.shopItem { background:#333; padding:15px; margin:10px 0; border-radius:10px; border:1px solid #555; }
+.shopItem h3 { color:#4CAF50; margin:5px 0; }
+.shopItem p { margin:5px 0; font-size:0.9em; }
+.shopItem button { background-color:#4CAF50; color:white; padding:10px 20px; border:none; border-radius:5px; cursor:pointer; margin-top:10px; }
+.shopItem button:hover { background-color:#45a049; }
+.shopItem button:disabled { background-color:#666; cursor:not-allowed; }
+.shopItem .owned { color:#4CAF50; font-weight:bold; }
+#closeShop { background-color:#f44336; color:white; padding:10px 20px; border:none; border-radius:5px; cursor:pointer; margin-top:20px; }
 </style>
 </head>
 <body>
@@ -63,6 +76,8 @@ button:active { transform: scale(0.9); }
 
 <div id="currency">Monety: <span id="coins">0</span></div>
 
+<button id="shopButton">🛒 SKLEP</button>
+
 <div id="upgrades">
   <button class="upgradeButton" id="shortenCooldown">Skróć cooldown (-0.5s) 50 monet</button>
   <button class="upgradeButton" id="increaseChances">Ulepszenie szans 100 monet</button>
@@ -81,6 +96,54 @@ button:active { transform: scale(0.9); }
     <p>Czy na pewno chcesz zresetować progres?</p>
     <button id="resetYes">Tak</button>
     <button id="resetNo">Nie</button>
+  </div>
+</div>
+
+<!-- Shop overlay -->
+<div id="shopOverlay">
+  <div id="shopBox">
+    <h2>🛒 SKLEP PAWEŁKÓW</h2>
+    <p style="color:#ccc;">Zbieraj wylosowane Pawełki i wymień je na potężne ulepszenia!</p>
+    
+    <div class="shopItem" id="luckyPawelItem">
+      <h3>Lucky Pawel 🍀</h3>
+      <p>Mnożnik szczęścia: <strong>1.5x</strong></p>
+      <p>Wymagane:</p>
+      <ul style="text-align:left;">
+        <li>gejmingowy paweł: <span id="req1">0</span>/20</li>
+        <li>paweł prezydent: <span id="req2">0</span>/10</li>
+        <li>Monety: <span id="req3">0</span>/1000</li>
+      </ul>
+      <button id="buyLuckyPawel">Kup Lucky Pawel</button>
+    </div>
+
+    <div class="shopItem" id="megaPawelItem">
+      <h3>Mega Pawel 💎</h3>
+      <p>Mnożnik szczęścia: <strong>2x</strong></p>
+      <p>Wymagane:</p>
+      <ul style="text-align:left;">
+        <li>paweł w zoltym hoodie: <span id="req4">0</span>/25</li>
+        <li>funni paweł: <span id="req5">0</span>/15</li>
+        <li>Monety: <span id="req6">0</span>/2500</li>
+      </ul>
+      <button id="buyMegaPawel">Kup Mega Pawel</button>
+    </div>
+
+    <div class="shopItem" id="ultimatePawelItem">
+      <h3>Ultimate Pawel 👑</h3>
+      <p>Mnożnik szczęścia: <strong>3x</strong></p>
+      <p>Wymagane:</p>
+      <ul style="text-align:left;">
+        <li>paweł ok: <span id="req7">0</span>/50</li>
+        <li>świąteczny paweł: <span id="req8">0</span>/20</li>
+        <li>paweł dostaje backshoty: <span id="req9">0</span>/2</li>
+        <li>paweł komunista: <span id="req10">0</span>/1</li>
+        <li>Monety: <span id="req11">0</span>/5000</li>
+      </ul>
+      <button id="buyUltimatePawel">Kup Ultimate Pawel</button>
+    </div>
+
+    <button id="closeShop">Zamknij sklep</button>
   </div>
 </div>
 
@@ -126,6 +189,10 @@ let autoRollEnabled = localStorage.getItem('autoRollEnabled') !== null ? JSON.pa
 let autoRollInterval = null;
 let playTime = localStorage.getItem('playTime') !== null ? parseInt(localStorage.getItem('playTime')) : 0;
 let playTimeStart = Date.now();
+
+// Mnożniki szczęścia ze sklepu
+let luckMultiplier = localStorage.getItem('luckMultiplier') !== null ? parseFloat(localStorage.getItem('luckMultiplier')) : 1;
+let ownedShopItems = localStorage.getItem('ownedShopItems') ? JSON.parse(localStorage.getItem('ownedShopItems')) : [];
 
 // ===== FUNKCJE =====
 function updateUI(){
@@ -174,14 +241,14 @@ function rollRNG(showRareAnimationOnly=false){
   totalRolls++;
 
   const entries=[];
-images.forEach(img=>{
-  if(img.text === 'Śledziu') return; // ❌ USUWAMY ŚLEDZIA Z LOSOWANIA
-  if(img.requiresItem && !inventory.includes(img.requiresItem)) return;
+  images.forEach(img=>{
+    if(img.text === 'Śledziu') return; // ❌ USUWAMY ŚLEDZIA Z LOSOWANIA
+    if(img.requiresItem && !inventory.includes(img.requiresItem)) return;
 
-  let count = Math.floor(img.chance * 1000000);
-  if(inventory.length > 0) count = Math.floor(count * 1.05);
-  for(let i = 0; i < count; i++) entries.push(img);
-});
+    let count = Math.floor(img.chance * 1000000 * luckMultiplier); // Dodano luckMultiplier
+    if(inventory.length > 0) count = Math.floor(count * 1.05);
+    for(let i = 0; i < count; i++) entries.push(img);
+  });
 
   const imgElem=document.getElementById('resultImage');
   const textElem=document.getElementById('resultText');
@@ -194,9 +261,8 @@ images.forEach(img=>{
   const interval=setInterval(()=>{
     let temp;
     do {
-  temp = images[Math.floor(Math.random()*images.length)];
-} while (temp.text === 'Śledziu');
-
+      temp = images[Math.floor(Math.random()*images.length)];
+    } while (temp.text === 'Śledziu');
 
     imgElem.src=temp.src;
     textElem.textContent=temp.text;
@@ -214,10 +280,10 @@ images.forEach(img=>{
       imgElem.src=selected.src;
       textElem.textContent=selected.text;
       if (selected.chance <= 0) {
-  chanceElem.textContent = 'Szansa: ???';
-} else {
-  chanceElem.textContent = `Szansa: 1/${Math.round(1 / selected.chance)}`;
-}
+        chanceElem.textContent = 'Szansa: ???';
+      } else {
+        chanceElem.textContent = `Szansa: 1/${Math.round(1 / selected.chance)}`;
+      }
 
       rarityElem.textContent=`Rzadkość: ${selected.rarity}`;
       let reward=selected.reward;
@@ -288,6 +354,135 @@ const resetNo = document.getElementById('resetNo');
 document.getElementById('resetProgress').addEventListener('click',()=>{ resetOverlay.style.display='flex'; });
 resetNo.addEventListener('click',()=>{ resetOverlay.style.display='none'; });
 resetYes.addEventListener('click',()=>{ localStorage.clear(); location.reload(); });
+
+// ===== SKLEP =====
+const shopOverlay = document.getElementById('shopOverlay');
+const shopButton = document.getElementById('shopButton');
+const closeShop = document.getElementById('closeShop');
+
+shopButton.addEventListener('click', () => {
+  updateShopUI();
+  shopOverlay.style.display = 'flex';
+});
+
+closeShop.addEventListener('click', () => {
+  shopOverlay.style.display = 'none';
+});
+
+function updateShopUI() {
+  // Lucky Pawel
+  const gejmingowy = historyData['gejmingowy paweł'] || 0;
+  const prezydent = historyData['paweł prezydent'] || 0;
+  document.getElementById('req1').textContent = gejmingowy;
+  document.getElementById('req2').textContent = prezydent;
+  document.getElementById('req3').textContent = coins;
+  
+  const luckyBtn = document.getElementById('buyLuckyPawel');
+  if(ownedShopItems.includes('Lucky Pawel')) {
+    luckyBtn.disabled = true;
+    luckyBtn.textContent = '✓ KUPIONE';
+  } else {
+    luckyBtn.disabled = !(gejmingowy >= 20 && prezydent >= 10 && coins >= 1000);
+  }
+
+  // Mega Pawel
+  const zolty = historyData['pawel w zoltym hoodie'] || 0;
+  const funni = historyData['funni paweł'] || 0;
+  document.getElementById('req4').textContent = zolty;
+  document.getElementById('req5').textContent = funni;
+  document.getElementById('req6').textContent = coins;
+  
+  const megaBtn = document.getElementById('buyMegaPawel');
+  if(ownedShopItems.includes('Mega Pawel')) {
+    megaBtn.disabled = true;
+    megaBtn.textContent = '✓ KUPIONE';
+  } else {
+    megaBtn.disabled = !(zolty >= 25 && funni >= 15 && coins >= 2500);
+  }
+
+  // Ultimate Pawel
+  const ok = historyData['paweł ok'] || 0;
+  const swiateczny = historyData['świąteczny paweł'] || 0;
+  const backshoty = historyData['paweł dostaje backshoty'] || 0;
+  const komunista = historyData['paweł komunista'] || 0;
+  document.getElementById('req7').textContent = ok;
+  document.getElementById('req8').textContent = swiateczny;
+  document.getElementById('req9').textContent = backshoty;
+  document.getElementById('req10').textContent = komunista;
+  document.getElementById('req11').textContent = coins;
+  
+  const ultimateBtn = document.getElementById('buyUltimatePawel');
+  if(ownedShopItems.includes('Ultimate Pawel')) {
+    ultimateBtn.disabled = true;
+    ultimateBtn.textContent = '✓ KUPIONE';
+  } else {
+    ultimateBtn.disabled = !(ok >= 50 && swiateczny >= 20 && backshoty >= 2 && komunista >= 1 && coins >= 5000);
+  }
+}
+
+document.getElementById('buyLuckyPawel').addEventListener('click', () => {
+  const gejmingowy = historyData['gejmingowy paweł'] || 0;
+  const prezydent = historyData['paweł prezydent'] || 0;
+  
+  if(gejmingowy >= 20 && prezydent >= 10 && coins >= 1000 && !ownedShopItems.includes('Lucky Pawel')) {
+    historyData['gejmingowy paweł'] -= 20;
+    historyData['paweł prezydent'] -= 10;
+    coins -= 1000;
+    luckMultiplier *= 1.5;
+    ownedShopItems.push('Lucky Pawel');
+    
+    localStorage.setItem('luckMultiplier', luckMultiplier);
+    localStorage.setItem('ownedShopItems', JSON.stringify(ownedShopItems));
+    
+    updateUI();
+    updateShopUI();
+    alert('🍀 Lucky Pawel zakupiony! Mnożnik szczęścia: ' + luckMultiplier.toFixed(2) + 'x');
+  }
+});
+
+document.getElementById('buyMegaPawel').addEventListener('click', () => {
+  const zolty = historyData['pawel w zoltym hoodie'] || 0;
+  const funni = historyData['funni paweł'] || 0;
+  
+  if(zolty >= 25 && funni >= 15 && coins >= 2500 && !ownedShopItems.includes('Mega Pawel')) {
+    historyData['pawel w zoltym hoodie'] -= 25;
+    historyData['funni paweł'] -= 15;
+    coins -= 2500;
+    luckMultiplier *= 2;
+    ownedShopItems.push('Mega Pawel');
+    
+    localStorage.setItem('luckMultiplier', luckMultiplier);
+    localStorage.setItem('ownedShopItems', JSON.stringify(ownedShopItems));
+    
+    updateUI();
+    updateShopUI();
+    alert('💎 Mega Pawel zakupiony! Mnożnik szczęścia: ' + luckMultiplier.toFixed(2) + 'x');
+  }
+});
+
+document.getElementById('buyUltimatePawel').addEventListener('click', () => {
+  const ok = historyData['paweł ok'] || 0;
+  const swiateczny = historyData['świąteczny paweł'] || 0;
+  const backshoty = historyData['paweł dostaje backshoty'] || 0;
+  const komunista = historyData['paweł komunista'] || 0;
+  
+  if(ok >= 50 && swiateczny >= 20 && backshoty >= 2 && komunista >= 1 && coins >= 5000 && !ownedShopItems.includes('Ultimate Pawel')) {
+    historyData['paweł ok'] -= 50;
+    historyData['świąteczny paweł'] -= 20;
+    historyData['paweł dostaje backshoty'] -= 2;
+    historyData['paweł komunista'] -= 1;
+    coins -= 5000;
+    luckMultiplier *= 3;
+    ownedShopItems.push('Ultimate Pawel');
+    
+    localStorage.setItem('luckMultiplier', luckMultiplier);
+    localStorage.setItem('ownedShopItems', JSON.stringify(ownedShopItems));
+    
+    updateUI();
+    updateShopUI();
+    alert('👑 Ultimate Pawel zakupiony! Mnożnik szczęścia: ' + luckMultiplier.toFixed(2) + 'x');
+  }
+});
 
 // ===== ODŚWIEŻANIE UI =====
 setInterval(updateUI,500);
