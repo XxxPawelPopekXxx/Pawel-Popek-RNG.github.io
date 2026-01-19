@@ -385,22 +385,6 @@ function updateQuestsUI() {
   });
 }
 
-function updateCodesUI() {
-  const usedCodesList = document.getElementById('usedCodesList');
-  
-  if(usedCodes.length === 0) {
-    usedCodesList.innerHTML = 'Brak użytych kodów';
-  } else {
-    usedCodesList.innerHTML = '';
-    usedCodes.forEach(code => {
-      const codeDiv = document.createElement('div');
-      codeDiv.className = 'codeHistoryItem';
-      codeDiv.textContent = `${code.code} - ${code.reward} monet`;
-      usedCodesList.appendChild(codeDiv);
-    });
-  }
-}
-
 function updateUI(){
   document.getElementById('statsPlayTime').textContent = playTime+'s';
   document.getElementById('inventory').textContent = inventory.length?`Ekwipunek: ${inventory.join(', ')}`:'Ekwipunek: brak';
@@ -426,16 +410,6 @@ function updateUI(){
 
   // Aktualizuj questy
   updateQuests();
-
-  // Aktualizuj przycisk Auto-Roll
-  const autoRollBtn = document.getElementById('toggleAutoRoll');
-  if(autoRollEnabled) {
-    autoRollBtn.textContent = 'Wyłącz Auto-Roll';
-    autoRollBtn.style.backgroundColor = '#f44336';
-  } else {
-    autoRollBtn.textContent = 'Włącz Auto-Roll 5000 monet';
-    autoRollBtn.style.backgroundColor = '#2196F3';
-  }
 
   // zapis do localStorage
   localStorage.setItem('coins',coins);
@@ -477,340 +451,315 @@ function rollRNG(showRareAnimationOnly=false){
     let count;
     if(img.text === 'Śledziu') {
       // Śledź nie jest modyfikowany przez luck multiplier
-      count = Math.floor(img
-.chance * 1000000);
-} else {
-count = Math.floor(img.chance * 1000000 * luckMultiplier);
-if(inventory.length > 0) count = Math.floor(count * 1.05);
-}
-for(let i = 0; i < count; i++) entries.push(img);
-});
-const imgElem=document.getElementById('resultImage');
-const textElem=document.getElementById('resultText');
-const chanceElem=document.getElementById('chanceText');
-const rarityElem=document.getElementById('rarityText');
-let elapsedAnim=0;
-const animSpeed=50;
-const totalDuration=1000;
-const interval=setInterval(()=>{
-// Wyklucz Śledzia z animacji
-const tempImages = images.filter(img => img.text !== 'Śledziu');
-const temp = tempImages[Math.floor(Math.random()*tempImages.length)];
-imgElem.src=temp.src;
-textElem.textContent=temp.text;
-if(temp.chance > 0) {
-  chanceElem.textContent=`Szansa: 1/${Math.round(1/temp.chance)}`;
-} else {
-  chanceElem.textContent='Szansa: ???';
-}
-rarityElem.textContent=`Rzadkość: ${temp.rarity}`;
-if(temp.rarity!=='Common' && temp.rarity!=='Uncommon'){
-  imgElem.style.transform=`scale(${1+Math.random()*0.2}) rotate(${(Math.random()-0.5)*20}deg)`;
-  imgElem.style.filter=`brightness(${1+Math.random()*0.5})`;
-} else { 
-  imgElem.style.transform='scale(1) rotate(0deg)'; 
-  imgElem.style.filter='brightness(1)'; 
+      count = Math.floor(img.chance * 1000000);
+    } else {
+      count = Math.floor(img.chance * 1000000 * luckMultiplier);
+      if(inventory.length > 0) count = Math.floor(count * 1.05);
+    }
+    
+    for(let i = 0; i < count; i++) entries.push(img);
+  });
+
+  const imgElem=document.getElementById('resultImage');
+  const textElem=document.getElementById('resultText');
+  const chanceElem=document.getElementById('chanceText');
+  const rarityElem=document.getElementById('rarityText');
+
+  let elapsedAnim=0;
+  const animSpeed=50;
+  const totalDuration=1000;
+  const interval=setInterval(()=>{
+    // Wyklucz Śledzia z animacji
+    const tempImages = images.filter(img => img.text !== 'Śledziu');
+    const temp = tempImages[Math.floor(Math.random()*tempImages.length)];
+
+    imgElem.src=temp.src;
+    textElem.textContent=temp.text;
+    if(temp.chance > 0) {
+      chanceElem.textContent=`Szansa: 1/${Math.round(1/temp.chance)}`;
+    } else {
+      chanceElem.textContent='Szansa: ???';
+    }
+    rarityElem.textContent=`Rzadkość: ${temp.rarity}`;
+    if(temp.rarity!=='Common' && temp.rarity!=='Uncommon'){
+      imgElem.style.transform=`scale(${1+Math.random()*0.2}) rotate(${(Math.random()-0.5)*20}deg)`;
+      imgElem.style.filter=`brightness(${1+Math.random()*0.5})`;
+    } else { 
+      imgElem.style.transform='scale(1) rotate(0deg)'; 
+      imgElem.style.filter='brightness(1)'; 
+    }
+
+    elapsedAnim+=animSpeed;
+    if(elapsedAnim>=totalDuration){
+      clearInterval(interval);
+      const selected=entries[Math.floor(Math.random()*entries.length)];
+      imgElem.src=selected.src;
+      textElem.textContent=selected.text;
+      if (selected.chance <= 0 || selected.chance > 1) {
+        chanceElem.textContent = 'Szansa: ???';
+      } else {
+        chanceElem.textContent = `Szansa: 1/${Math.round(1 / selected.chance)}`;
+      }
+
+      rarityElem.textContent=`Rzadkość: ${selected.rarity}`;
+      let reward=selected.reward;
+      if(inventory.length>0) reward=Math.floor(reward*(1+0.05*inventory.length));
+      coins+=reward;
+      if(historyData[selected.text]) historyData[selected.text]++;
+      else historyData[selected.text]=1;
+      imgElem.style.transform='scale(1) rotate(0deg)';
+      imgElem.style.filter='brightness(1)';
+      
+      // Popup dla Śledzia
+      if(selected.text === 'Śledziu') {
+        showPopup('🐟 WYLOSOWAŁEŚ ŚLEDZIA! 🐟', 'success');
+      }
+      
+      updateUI();
+    }
+  },animSpeed);
 }
 
-elapsedAnim+=animSpeed;
-if(elapsedAnim>=totalDuration){
-  clearInterval(interval);
-  const selected=entries[Math.floor(Math.random()*entries.length)];
-  imgElem.src=selected.src;
-  textElem.textContent=selected.text;
-  if (selected.chance <= 0 || selected.chance > 1) {
-    chanceElem.textContent = 'Szansa: ???';
-  } else {
-    chanceElem.textContent = `Szansa: 1/${Math.round(1 / selected.chance)}`;
-  }
-
-  rarityElem.textContent=`Rzadkość: ${selected.rarity}`;
-  let reward=selected.reward;
-  if(inventory.length>0) reward=Math.floor(reward*(1+0.05*inventory.length));
-  coins+=reward;
-  if(historyData[selected.text]) historyData[selected.text]++;
-  else historyData[selected.text]=1;
-  imgElem.style.transform='scale(1) rotate(0deg)';
-  imgElem.style.filter='brightness(1)';
-  
-  // Popup dla Śledzia
-  if(selected.text === 'Śledziu') {
-    showPopup('🐟 WYLOSOWAŁEŚ ŚLEDZIA! 🐟', 'success');
-  }
-  
-  updateUI();
-}
-},animSpeed);
-}
 // ===== BUTTONS =====
 document.getElementById('rollButton').addEventListener('click', async ()=>{
-if(!musicStarted){
-currentMusicIndex = 0;
-bgMusic.src = musicFiles[currentMusicIndex];
-try{ await bgMusic.play(); musicStarted=true;}catch(err){console.log(err);}
-}
-rollRNG(true);
+  if(!musicStarted){
+    currentMusicIndex = 0;
+    bgMusic.src = musicFiles[currentMusicIndex];
+    try{ await bgMusic.play(); musicStarted=true;}catch(err){console.log(err);}
+  }
+  rollRNG(true);
 });
+
 document.getElementById('muteButton').addEventListener('click',()=>{ bgMusic.muted=!bgMusic.muted; });
 document.getElementById('volumeControl').addEventListener('input',(e)=>{ bgMusic.volume=e.target.value/100; });
+
 // ===== ULEPSZENIA =====
 document.getElementById('shortenCooldown').addEventListener('click',()=>{
-if(coins>=50 && cooldown>1000){
-coins-=50;
-cooldown=Math.max(1000,cooldown-500);
-updateUI();
-showPopup(Cooldown skrócony! Teraz ${(cooldown/1000).toFixed(1)}s, 'success');
-} else if(cooldown <= 1000) {
-showPopup('Nie można już ulepszyć cooldowna!', 'error');
-} else {
-showPopup('Nie masz wystarczająco monet!', 'error');
-}
+  if(coins>=50 && cooldown>1000){ 
+    coins-=50; 
+    cooldown=Math.max(1000,cooldown-500); 
+    updateUI(); 
+    showPopup(`Cooldown skrócony! Teraz ${(cooldown/1000).toFixed(1)}s`, 'success');
+  } else if(cooldown <= 1000) {
+    showPopup('Nie można już ulepszyć cooldowna!', 'error');
+  } else {
+    showPopup('Nie masz wystarczająco monet!', 'error');
+  }
 });
+
 document.getElementById('increaseChances').addEventListener('click',()=>{
-if(coins>=100){
-coins-=100;
-images.forEach(img=>{
-if(img.text === 'Śledziu') return; // Nie modyfikujemy szansy Śledzia
-if(img.text==='gejmingowy paweł' || img.text==='paweł prezydent'){
-img.chance = Math.max(0.01, img.chance0.95);
-} else {
-img.chance = Math.min(1, Math.round(img.chance1.05*1000)/1000);
-}
+  if(coins>=100){
+    coins-=100;
+    images.forEach(img=>{
+      if(img.text === 'Śledziu') return; // Nie modyfikujemy szansy Śledzia
+      if(img.text==='gejmingowy paweł' || img.text==='paweł prezydent'){
+        img.chance = Math.max(0.01, img.chance*0.95);
+      } else {
+        img.chance = Math.min(1, Math.round(img.chance*1.05*1000)/1000);
+      }
+    });
+    localStorage.setItem('imagesChances', JSON.stringify(images.map(img=>img.chance)));
+    updateUI(); 
+    showPopup('Szanse zostały ulepszone!', 'success');
+  } else {
+    showPopup('Nie masz wystarczająco monet!', 'error');
+  }
 });
-localStorage.setItem('imagesChances', JSON.stringify(images.map(img=>img.chance)));
-updateUI();
-showPopup('Szanse zostały ulepszone!', 'success');
-} else {
-showPopup('Nie masz wystarczająco monet!', 'error');
-}
-});
+
 document.getElementById('buyItem').addEventListener('click',()=>{
-if(coins>=100){
-if(!inventory.includes('Tajemniczy Przedmiot')){
-coins-=100;
-inventory.push('Tajemniczy Przedmiot');
-updateUI();
-showPopup('Tajemniczy Przedmiot dodany!', 'success');
-} else {
-showPopup('Masz już Tajemniczy Przedmiot!', 'error');
-}
-} else {
-showPopup('Nie masz wystarczająco monet!', 'error');
-}
+  if(coins>=100){
+    if(!inventory.includes('Tajemniczy Przedmiot')){ 
+      coins-=100; 
+      inventory.push('Tajemniczy Przedmiot'); 
+      updateUI(); 
+      showPopup('Tajemniczy Przedmiot dodany!', 'success');
+    } else {
+      showPopup('Masz już Tajemniczy Przedmiot!', 'error');
+    }
+  } else {
+    showPopup('Nie masz wystarczająco monet!', 'error');
+  }
 });
+
 document.getElementById('toggleAutoRoll').addEventListener('click',()=>{
-if(autoRollEnabled){
-clearInterval(autoRollInterval);
-autoRollEnabled=false;
-localStorage.setItem('autoRollEnabled', false);
-updateUI();
-showPopup('Auto-Roll wyłączony', 'success');
-} else {
-if(coins>=5000){
-coins-=5000;
-autoRollEnabled=true;
-localStorage.setItem('autoRollEnabled', true);
-autoRollInterval=setInterval(()=>rollRNG(true),1500);
-updateUI();
-showPopup('Auto-Roll włączony', 'success');
-} else {
-showPopup('Nie masz wystarczająco monet na Auto-Roll!', 'error');
-}
-}
+  if(autoRollEnabled){ 
+    clearInterval(autoRollInterval); 
+    autoRollEnabled=false; 
+    updateUI(); 
+    showPopup('Auto-Roll wyłączony', 'success');
+  } else { 
+    if(coins>=5000){ 
+      coins-=5000; 
+      autoRollEnabled=true; 
+      autoRollInterval=setInterval(()=>rollRNG(true),1500); 
+      updateUI(); 
+      showPopup('Auto-Roll włączony', 'success');
+    } else {
+      showPopup('Nie masz wystarczająco monet na Auto-Roll!', 'error');
+    }
+  }
 });
+
 // ===== RESET =====
 const resetOverlay = document.getElementById('resetOverlay');
 const resetYes = document.getElementById('resetYes');
 const resetNo = document.getElementById('resetNo');
+
 document.getElementById('resetProgress').addEventListener('click',()=>{ resetOverlay.style.display='flex'; });
 resetNo.addEventListener('click',()=>{ resetOverlay.style.display='none'; });
 resetYes.addEventListener('click',()=>{ localStorage.clear(); location.reload(); });
+
 // ===== SKLEP =====
 const shopOverlay = document.getElementById('shopOverlay');
 const shopButton = document.getElementById('shopButton');
 const closeShop = document.getElementById('closeShop');
+
 shopButton.addEventListener('click', () => {
-updateShopUI();
-shopOverlay.style.display = 'flex';
+  updateShopUI();
+  shopOverlay.style.display = 'flex';
 });
+
 closeShop.addEventListener('click', () => {
-shopOverlay.style.display = 'none';
+  shopOverlay.style.display = 'none';
 });
+
 function updateShopUI() {
-// Lucky Pawel
-const gejmingowy = historyData['gejmingowy paweł'] || 0;
-const prezydent = historyData['paweł prezydent'] || 0;
-document.getElementById('req1').textContent = gejmingowy;
-document.getElementById('req2').textContent = prezydent;
-document.getElementById('req3').textContent = coins;
-const luckyBtn = document.getElementById('buyLuckyPawel');
-if(ownedShopItems.includes('Lucky Pawel')) {
-luckyBtn.disabled = true;
-luckyBtn.textContent = '✓ KUPIONE';
-} else {
-luckyBtn.disabled = !(gejmingowy >= 20 && prezydent >= 10 && coins >= 1000);
+  // Lucky Pawel
+  const gejmingowy = historyData['gejmingowy paweł'] || 0;
+  const prezydent = historyData['paweł prezydent'] || 0;
+  document.getElementById('req1').textContent = gejmingowy;
+  document.getElementById('req2').textContent = prezydent;
+  document.getElementById('req3').textContent = coins;
+  
+  const luckyBtn = document.getElementById('buyLuckyPawel');
+  if(ownedShopItems.includes('Lucky Pawel')) {
+    luckyBtn.disabled = true;
+    luckyBtn.textContent = '✓ KUPIONE';
+  } else {
+    luckyBtn.disabled = !(gejmingowy >= 20 && prezydent >= 10 && coins >= 1000);
+  }
+
+  // Mega Pawel
+  const zolty = historyData['pawel w zoltym hoodie'] || 0;
+  const funni = historyData['funni paweł'] || 0;
+  document.getElementById('req4').textContent = zolty;
+  document.getElementById('req5').textContent = funni;
+  document.getElementById('req6').textContent = coins;
+  
+  const megaBtn = document.getElementById('buyMegaPawel');
+  if(ownedShopItems.includes('Mega Pawel')) {
+    megaBtn.disabled = true;
+    megaBtn.textContent = '✓ KUPIONE';
+  } else {
+    megaBtn.disabled = !(zolty >= 25 && funni >= 15 && coins >= 2500);
+  }
+
+  // Ultimate Pawel
+  const ok = historyData['paweł ok'] || 0;
+  const swiateczny = historyData['świąteczny paweł'] || 0;
+  const backshoty = historyData['paweł dostaje backshoty'] || 0;
+  const komunista = historyData['paweł komunista'] || 0;
+  document.getElementById('req7').textContent = ok;
+  document.getElementById('req8').textContent = swiateczny;
+  document.getElementById('req9').textContent = backshoty;
+  document.getElementById('req10').textContent = komunista;
+  document.getElementById('req11').textContent = coins;
+  
+  const ultimateBtn = document.getElementById('buyUltimatePawel');
+  if(ownedShopItems.includes('Ultimate Pawel')) {
+    ultimateBtn.disabled = true;
+    ultimateBtn.textContent = '✓ KUPIONE';
+  } else {
+    ultimateBtn.disabled = !(ok >= 50 && swiateczny >= 20 && backshoty >= 2 && komunista >= 1 && coins >= 5000);
+  }
 }
-// Mega Pawel
-const zolty = historyData['pawel w zoltym hoodie'] || 0;
-const funni = historyData['funni paweł'] || 0;
-document.getElementById('req4').textContent = zolty;
-document.getElementById('req5').textContent = funni;
-document.getElementById('req6').textContent = coins;
-const megaBtn = document.getElementById('buyMegaPawel');
-if(ownedShopItems.includes('Mega Pawel')) {
-megaBtn.disabled = true;
-megaBtn.textContent = '✓ KUPIONE';
-} else {
-megaBtn.disabled = !(zolty >= 25 && funni >= 15 && coins >= 2500);
-}
-// Ultimate Pawel
-const ok = historyData['paweł ok'] || 0;
-const swiateczny = historyData['świąteczny paweł'] || 0;
-const backshoty = historyData['paweł dostaje backshoty'] || 0;
-const komunista = historyData['paweł komunista'] || 0;
-document.getElementById('req7').textContent = ok;
-document.getElementById('req8').textContent = swiateczny;
-document.getElementById('req9').textContent = backshoty;
-document.getElementById('req10').textContent = komunista;
-document.getElementById('req11').textContent = coins;
-const ultimateBtn = document.getElementById('buyUltimatePawel');
-if(ownedShopItems.includes('Ultimate Pawel')) {
-ultimateBtn.disabled = true;
-ultimateBtn.textContent = '✓ KUPIONE';
-} else {
-ultimateBtn.disabled = !(ok >= 50 && swiateczny >= 20 && backshoty >= 2 && komunista >= 1 && coins >= 5000);
-}
-}
+
 document.getElementById('buyLuckyPawel').addEventListener('click', () => {
-const gejmingowy = historyData['gejmingowy paweł'] || 0;
-const prezydent = historyData['paweł prezydent'] || 0;
-if(gejmingowy >= 20 && prezydent >= 10 && coins >= 1000 && !ownedShopItems.includes('Lucky Pawel')) {
-historyData['gejmingowy paweł'] -= 20;
-historyData['paweł prezydent'] -= 10;
-coins -= 1000;
-luckMultiplier *= 1.5;
-ownedShopItems.push('Lucky Pawel');
-localStorage.setItem('luckMultiplier', luckMultiplier);
-localStorage.setItem('ownedShopItems', JSON.stringify(ownedShopItems));
-
-updateUI();
-updateShopUI();
-showPopup('🍀 Lucky Pawel zakupiony! Mnożnik: ' + luckMultiplier.toFixed(2) + 'x', 'success');
-} else {
-showPopup('Brak wymaganych zasobów!', 'error');
-}
+  const gejmingowy = historyData['gejmingowy paweł'] || 0;
+  const prezydent = historyData['paweł prezydent'] || 0;
+  
+  if(gejmingowy >= 20 && prezydent >= 10 && coins >= 1000 && !ownedShopItems.includes('Lucky Pawel')) {
+    historyData['gejmingowy paweł'] -= 20;
+    historyData['paweł prezydent'] -= 10;
+    coins -= 1000;
+    luckMultiplier *= 1.5;
+    ownedShopItems.push('Lucky Pawel');
+    
+    localStorage.setItem('luckMultiplier', luckMultiplier);
+    localStorage.setItem('ownedShopItems', JSON.stringify(ownedShopItems));
+    
+    updateUI();
+    updateShopUI();
+    showPopup('🍀 Lucky Pawel zakupiony! Mnożnik: ' + luckMultiplier.toFixed(2) + 'x', 'success');
+  } else {
+    showPopup('Brak wymaganych zasobów!', 'error');
+  }
 });
+
 document.getElementById('buyMegaPawel').addEventListener('click', () => {
-const zolty = historyData['pawel w zoltym hoodie'] || 0;
-const funni = historyData['funni paweł'] || 0;
-if(zolty >= 25 && funni >= 15 && coins >= 2500 && !ownedShopItems.includes('Mega Pawel')) {
-historyData['pawel w zoltym hoodie'] -= 25;
-historyData['funni paweł'] -= 15;
-coins -= 2500;
-luckMultiplier *= 2;
-ownedShopItems.push('Mega Pawel');
-localStorage.setItem('luckMultiplier', luckMultiplier);
-localStorage.setItem('ownedShopItems', JSON.stringify(ownedShopItems));
-
-updateUI();
-updateShopUI();
-showPopup('💎 Mega Pawel zakupiony! Mnożnik: ' + luckMultiplier.toFixed(2) + 'x', 'success');
-} else {
-showPopup('Brak wymaganych zasobów!', 'error');
-}
+  const zolty = historyData['pawel w zoltym hoodie'] || 0;
+  const funni = historyData['funni paweł'] || 0;
+  
+  if(zolty >= 25 && funni >= 15 && coins >= 2500 && !ownedShopItems.includes('Mega Pawel')) {
+    historyData['pawel w zoltym hoodie'] -= 25;
+    historyData['funni paweł'] -= 15;
+    coins -= 2500;
+    luckMultiplier *= 2;
+    ownedShopItems.push('Mega Pawel');
+    
+    localStorage.setItem('luckMultiplier', luckMultiplier);
+    localStorage.setItem('ownedShopItems', JSON.stringify(ownedShopItems));
+    
+    updateUI();
+    updateShopUI();
+    showPopup('💎 Mega Pawel zakupiony! Mnożnik: ' + luckMultiplier.toFixed(2) + 'x', 'success');
+  } else {
+    showPopup('Brak wymaganych zasobów!', 'error');
+  }
 });
+
 document.getElementById('buyUltimatePawel').addEventListener('click', () => {
-const ok = historyData['paweł ok'] || 0;
-const swiateczny = historyData['świąteczny paweł'] || 0;
-const backshoty = historyData['paweł dostaje backshoty'] || 0;
-const komunista = historyData['paweł komunista'] || 0;
-if(ok >= 50 && swiateczny >= 20 && backshoty >= 2 && komunista >= 1 && coins >= 5000 && !ownedShopItems.includes('Ultimate Pawel')) {
-historyData['paweł ok'] -= 50;
-historyData['świąteczny paweł'] -= 20;
-historyData['paweł dostaje backshoty'] -= 2;
-historyData['paweł komunista'] -= 1;
-coins -= 5000;
-luckMultiplier *= 3;
-ownedShopItems.push('Ultimate Pawel');
-localStorage.setItem('luckMultiplier', luckMultiplier);
-localStorage.setItem('ownedShopItems', JSON.stringify(ownedShopItems));
-
-updateUI();
-updateShopUI();
-showPopup('👑 Ultimate Pawel zakupiony! Mnożnik: ' + luckMultiplier.toFixed(2) + 'x', 'success');
-} else {
-showPopup('Brak wymaganych zasobów!', 'error');
-}
-});
-// ===== QUESTY =====
-const questsOverlay = document.getElementById('questsOverlay');
-const questsButton = document.getElementById('questsButton');
-const closeQuests = document.getElementById('closeQuests');
-questsButton.addEventListener('click', () => {
-updateQuestsUI();
-questsOverlay.style.display = 'flex';
-});
-closeQuests.addEventListener('click', () => {
-questsOverlay.style.display = 'none';
-});
-// ===== KODY =====
-const codesOverlay = document.getElementById('codesOverlay');
-const codesButton = document.getElementById('codesButton');
-const closeCodes = document.getElementById('closeCodes');
-const submitCode = document.getElementById('submitCode');
-const codeInput = document.getElementById('codeInput');
-codesButton.addEventListener('click', () => {
-updateCodesUI();
-codesOverlay.style.display = 'flex';
-});
-closeCodes.addEventListener('click', () => {
-codesOverlay.style.display = 'none';
-});
-submitCode.addEventListener('click', () => {
-const code = codeInput.value.trim().toUpperCase();
-if(!code) {
-showPopup('Wpisz kod!', 'error');
-return;
-}
-if(usedCodes.find(c => c.code === code)) {
-showPopup('Ten kod został już użyty!', 'error');
-codeInput.value = '';
-return;
-}
-if(promoCodes[code]) {
-const reward = promoCodes[code];
-coins += reward;
-usedCodes.push({code: code, reward: reward});
-localStorage.setItem('usedCodes', JSON.stringify(usedCodes));
-updateUI();
-updateCodesUI();
-showPopup(🎁 Kod aktywowany! +${reward} monet, 'success');
-codeInput.value = '';
-} else {
-showPopup('Nieprawidłowy kod!', 'error');
-codeInput.value = '';
-}
-});
-// Enter key dla kodów
-codeInput.addEventListener('keypress', (e) => {
-if(e.key === 'Enter') {
-submitCode.click();
-}
+  const ok = historyData['paweł ok'] || 0;
+  const swiateczny = historyData['świąteczny paweł'] || 0;
+  const backshoty = historyData['paweł dostaje backshoty'] || 0;
+  const komunista = historyData['paweł komunista'] || 0;
+  
+  if(ok >= 50 && swiateczny >= 20 && backshoty >= 2 && komunista >= 1 && coins >= 5000 && !ownedShopItems.includes('Ultimate Pawel')) {
+    historyData['paweł ok'] -= 50;
+    historyData['świąteczny paweł'] -= 20;
+    historyData['paweł dostaje backshoty'] -= 2;
+    historyData['paweł komunista'] -= 1;
+    coins -= 5000;
+    luckMultiplier *= 3;
+    ownedShopItems.push('Ultimate Pawel');
+    
+    localStorage.setItem('luckMultiplier', luckMultiplier);
+    localStorage.setItem('ownedShopItems', JSON.stringify(ownedShopItems));
+    
+    updateUI();
+    updateShopUI();
+    showPopup('👑 Ultimate Pawel zakupiony! Mnożnik: ' + luckMultiplier.toFixed(2) + 'x', 'success');
+  } else {
+    showPopup('Brak wymaganych zasobów!', 'error');
+  }
 });
 // ===== AUTO-SAVE & PLAYTIME UPDATE =====
 setInterval(()=>{
-playTime += 1; // Dodaj 1 sekundę
-document.getElementById('statsPlayTime').textContent = playTime+'s'; // Aktualizuj UI
-localStorage.setItem('playTime', playTime);
-localStorage.setItem('autoRollEnabled', autoRollEnabled);
+  playTime += 1; // Dodaj 1 sekundę
+  document.getElementById('statsPlayTime').textContent = playTime+'s'; // Aktualizuj UI
+  localStorage.setItem('playTime', playTime);
+  localStorage.setItem('autoRollEnabled', autoRollEnabled);
 }, 1000);
+
+
 // ===== INIT =====
 updateUI();
-updateCodesUI();
+
 // Przywróć auto-roll jeśli było włączone
 if(autoRollEnabled) {
-autoRollInterval = setInterval(() => rollRNG(true), 1500);
+  autoRollInterval = setInterval(() => rollRNG(true), 1500);
 }
+
 // Inicjalizacja głośności
 bgMusic.volume = document.getElementById('volumeControl').value / 100;
 </script>
