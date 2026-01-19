@@ -14,6 +14,8 @@ button:active { transform: scale(0.9); }
 #rollButton { background-color:#4CAF50; color:white; }
 #muteButton { background-color:#f44336; color:white; }
 .upgradeButton { background-color:#2196F3; color:white; }
+#toggleAutoRoll.disabled { background-color:#f44336; }
+#toggleAutoRoll.enabled { background-color:#4CAF50; }
 
 #resultImage { width:300px; height:300px; margin:20px auto; object-fit:cover; border-radius:15px; display:block; transition:all 0.1s; }
 #resultText { font-size:1.5em; margin-top:10px; }
@@ -136,7 +138,7 @@ button:active { transform: scale(0.9); }
   <button class="upgradeButton" id="shortenCooldown">Skróć cooldown (-0.5s) 50 monet</button>
   <button class="upgradeButton" id="increaseChances">Ulepszenie szans 100 monet</button>
   <button class="upgradeButton" id="buyItem">Kup Tajemniczy Przedmiot 100 monet</button>
-  <button class="upgradeButton" id="toggleAutoRoll">Włącz Auto-Roll 5000 monet</button>
+  <button class="upgradeButton disabled" id="toggleAutoRoll">Kup Auto-Roll 5000 monet</button>
 </div>
 
 <div id="inventory">Ekwipunek: brak</div>
@@ -282,6 +284,7 @@ let cooldown = localStorage.getItem('cooldown') !== null ? parseInt(localStorage
 let lastRoll = 0;
 let totalRolls = localStorage.getItem('totalRolls') !== null ? parseInt(localStorage.getItem('totalRolls')) : 0;
 let autoRollEnabled = localStorage.getItem('autoRollEnabled') !== null ? JSON.parse(localStorage.getItem('autoRollEnabled')) : false;
+let autoRollPurchased = localStorage.getItem('autoRollPurchased') !== null ? JSON.parse(localStorage.getItem('autoRollPurchased')) : false;
 let autoRollInterval = null;
 let playTime = localStorage.getItem('playTime') !== null ? parseInt(localStorage.getItem('playTime')) : 0;
 let playTimeStart = localStorage.getItem('playTimeStart') !== null ? parseInt(localStorage.getItem('playTimeStart')) : Date.now();
@@ -587,21 +590,44 @@ document.getElementById('buyItem').addEventListener('click',()=>{
 });
 
 document.getElementById('toggleAutoRoll').addEventListener('click',()=>{
-  if(autoRollEnabled){ 
-    clearInterval(autoRollInterval); 
-    autoRollEnabled=false; 
-    updateUI(); 
-    showPopup('Auto-Roll wyłączony', 'success');
-  } else { 
-    if(coins>=5000){ 
-      coins-=5000; 
-      autoRollEnabled=true; 
-      autoRollInterval=setInterval(()=>rollRNG(true),1500); 
-      updateUI(); 
-      showPopup('Auto-Roll włączony', 'success');
+  const button = document.getElementById('toggleAutoRoll');
+  
+  // Jeśli jeszcze nie kupiono, wymaga zapłaty
+  if(!autoRollPurchased) {
+    if(coins >= 5000) {
+      coins -= 5000;
+      autoRollPurchased = true;
+      autoRollEnabled = false; // Domyślnie wyłączony po kupnie
+      localStorage.setItem('autoRollPurchased', autoRollPurchased);
+      button.textContent = 'Włącz Auto-Roll';
+      button.classList.remove('enabled');
+      button.classList.add('disabled');
+      updateUI();
+      showPopup('Auto-Roll zakupiony! Kliknij ponownie aby włączyć', 'success');
     } else {
       showPopup('Nie masz wystarczająco monet na Auto-Roll!', 'error');
     }
+  } else {
+    // Jeśli już kupiono, działa jako przełącznik
+    if(autoRollEnabled) {
+      // Wyłącz
+      clearInterval(autoRollInterval);
+      autoRollEnabled = false;
+      button.textContent = 'Włącz Auto-Roll';
+      button.classList.remove('enabled');
+      button.classList.add('disabled');
+      showPopup('Auto-Roll wyłączony', 'success');
+    } else {
+      // Włącz
+      autoRollEnabled = true;
+      autoRollInterval = setInterval(() => rollRNG(true), 1500);
+      button.textContent = 'Wyłącz Auto-Roll';
+      button.classList.remove('disabled');
+      button.classList.add('enabled');
+      showPopup('Auto-Roll włączony', 'success');
+    }
+    localStorage.setItem('autoRollEnabled', autoRollEnabled);
+    updateUI();
   }
 });
 
@@ -827,11 +853,29 @@ setInterval(()=>{
   document.getElementById('statsPlayTime').textContent = playTime+'s'; // Aktualizuj UI
   localStorage.setItem('playTime', playTime);
   localStorage.setItem('autoRollEnabled', autoRollEnabled);
+  localStorage.setItem('autoRollPurchased', autoRollPurchased);
 }, 1000);
 
 
 // ===== INIT =====
 updateUI(false); // Nie sprawdzaj questów przy starcie (fromRoll=false)
+
+// Aktualizuj wygląd przycisku Auto-Roll przy starcie
+const autoRollButton = document.getElementById('toggleAutoRoll');
+if(autoRollPurchased) {
+  if(autoRollEnabled) {
+    autoRollButton.textContent = 'Wyłącz Auto-Roll';
+    autoRollButton.classList.add('enabled');
+    autoRollButton.classList.remove('disabled');
+  } else {
+    autoRollButton.textContent = 'Włącz Auto-Roll';
+    autoRollButton.classList.add('disabled');
+    autoRollButton.classList.remove('enabled');
+  }
+} else {
+  autoRollButton.textContent = 'Kup Auto-Roll 5000 monet';
+  autoRollButton.classList.add('disabled');
+}
 
 // Przywróć auto-roll jeśli było włączone
 if(autoRollEnabled) {
