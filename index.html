@@ -334,20 +334,24 @@ function showPopup(message, type = 'success') {
 }
 
 // ===== FUNKCJE =====
-function updateQuests() {
-  // Aktualizuj postęp questów
+function updateQuests(fromRoll = false) {
+  // Aktualizuj postęp questów TYLKO gdy fromRoll = true (po losowaniu)
+  // To zapobiega automatycznemu wykonywaniu questów przy starcie
   quests.forEach(q => {
     if(q.completed) return;
     
-    if(q.type === 'rolls') {
-      q.current = totalRolls;
-    } else if(q.type === 'coins') {
-      q.current = coins;
-    } else if(q.type === 'unique') {
-      q.current = Object.keys(historyData).length;
-    } else if(q.type.startsWith('item:')) {
-      const itemName = q.type.split(':')[1];
-      q.current = historyData[itemName] || 0;
+    // Aktualizuj current tylko jeśli to wywołanie z roll lub jest to quest coins/unique
+    if(fromRoll || q.type === 'coins' || q.type === 'unique') {
+      if(q.type === 'rolls') {
+        q.current = totalRolls;
+      } else if(q.type === 'coins') {
+        q.current = coins;
+      } else if(q.type === 'unique') {
+        q.current = Object.keys(historyData).length;
+      } else if(q.type.startsWith('item:')) {
+        const itemName = q.type.split(':')[1];
+        q.current = historyData[itemName] || 0;
+      }
     }
     
     if(q.current >= q.target && !q.completed) {
@@ -385,7 +389,7 @@ function updateQuestsUI() {
   });
 }
 
-function updateUI(){
+function updateUI(fromRoll = false){
   document.getElementById('statsPlayTime').textContent = playTime+'s';
   document.getElementById('inventory').textContent = inventory.length?`Ekwipunek: ${inventory.join(', ')}`:'Ekwipunek: brak';
 
@@ -408,8 +412,8 @@ function updateUI(){
     chanceList.innerHTML += `${img.text}: ${(img.chance*100).toFixed(2)}%<br>`;
   });
 
-  // Aktualizuj questy
-  updateQuests();
+  // Aktualizuj questy - przekaż parametr fromRoll
+  updateQuests(fromRoll);
 
   // zapis do localStorage
   localStorage.setItem('coins',coins);
@@ -515,7 +519,8 @@ function rollRNG(showRareAnimationOnly=false){
         showPopup('🐟 WYLOSOWAŁEŚ ŚLEDZIA! 🐟', 'success');
       }
       
-      updateUI();
+      // Aktualizuj UI i przekaż fromRoll=true
+      updateUI(true);
     }
   },animSpeed);
 }
@@ -743,6 +748,79 @@ document.getElementById('buyUltimatePawel').addEventListener('click', () => {
     showPopup('Brak wymaganych zasobów!', 'error');
   }
 });
+
+// ===== QUESTY =====
+const questsOverlay = document.getElementById('questsOverlay');
+const questsButton = document.getElementById('questsButton');
+const closeQuests = document.getElementById('closeQuests');
+
+questsButton.addEventListener('click', () => {
+  updateQuestsUI();
+  questsOverlay.style.display = 'flex';
+});
+
+closeQuests.addEventListener('click', () => {
+  questsOverlay.style.display = 'none';
+});
+
+// ===== KODY =====
+const codesOverlay = document.getElementById('codesOverlay');
+const codesButton = document.getElementById('codesButton');
+const closeCodes = document.getElementById('closeCodes');
+const submitCode = document.getElementById('submitCode');
+const codeInput = document.getElementById('codeInput');
+
+codesButton.addEventListener('click', () => {
+  updateCodesUI();
+  codesOverlay.style.display = 'flex';
+});
+
+closeCodes.addEventListener('click', () => {
+  codesOverlay.style.display = 'none';
+});
+
+submitCode.addEventListener('click', () => {
+  const code = codeInput.value.toUpperCase().trim();
+  
+  if(!code) {
+    showPopup('Wpisz kod!', 'error');
+    return;
+  }
+  
+  if(usedCodes.includes(code)) {
+    showPopup('Ten kod został już użyty!', 'error');
+    return;
+  }
+  
+  if(promoCodes[code]) {
+    coins += promoCodes[code];
+    usedCodes.push(code);
+    localStorage.setItem('usedCodes', JSON.stringify(usedCodes));
+    updateUI();
+    updateCodesUI();
+    showPopup(`✨ Kod aktywowany! +${promoCodes[code]} monet`, 'success');
+    codeInput.value = '';
+  } else {
+    showPopup('Nieprawidłowy kod!', 'error');
+  }
+});
+
+function updateCodesUI() {
+  const usedCodesList = document.getElementById('usedCodesList');
+  
+  if(usedCodes.length === 0) {
+    usedCodesList.textContent = 'Brak użytych kodów';
+  } else {
+    usedCodesList.innerHTML = '';
+    usedCodes.forEach(code => {
+      const codeDiv = document.createElement('div');
+      codeDiv.className = 'codeHistoryItem';
+      codeDiv.textContent = `${code} - ${promoCodes[code]} monet`;
+      usedCodesList.appendChild(codeDiv);
+    });
+  }
+}
+
 // ===== AUTO-SAVE & PLAYTIME UPDATE =====
 setInterval(()=>{
   playTime += 1; // Dodaj 1 sekundę
@@ -753,7 +831,7 @@ setInterval(()=>{
 
 
 // ===== INIT =====
-updateUI();
+updateUI(false); // Nie sprawdzaj questów przy starcie (fromRoll=false)
 
 // Przywróć auto-roll jeśli było włączone
 if(autoRollEnabled) {
