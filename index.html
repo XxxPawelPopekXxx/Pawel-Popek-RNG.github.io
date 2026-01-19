@@ -379,7 +379,7 @@ function rollRNG(showRareAnimationOnly=false){
 // ===== BUTTONS =====
 document.getElementById('rollButton').addEventListener('click', async ()=>{
   if(!musicStarted){
-    currentMusicIndex = Math.floor(Math.random()*musicFiles.length);
+    currentMusicIndex = 0;
     bgMusic.src = musicFiles[currentMusicIndex];
     try{ await bgMusic.play(); musicStarted=true;}catch(err){console.log(err);}
   }
