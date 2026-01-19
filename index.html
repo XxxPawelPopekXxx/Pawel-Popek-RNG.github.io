@@ -8,6 +8,23 @@
 body { font-family: Arial; background:#121212; color:#fff; text-align:center; margin:0; padding:0; }
 h1 { margin-top:20px; font-size:2em; }
 
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
 button { padding:15px 30px; font-size:1.2em; margin:10px; cursor:pointer; border:none; border-radius:10px; transition:transform 0.2s; }
 button:active { transform: scale(0.9); }
 
@@ -41,9 +58,10 @@ button:active { transform: scale(0.9); }
   justify-content: center; 
   align-items: center; 
   gap: 6px;
-  transition: background-color 0.3s;
+  transition: background-color 0.3s, opacity 0.3s;
   z-index: 1001;
 }
+#menuButton.hidden { opacity: 0; pointer-events: none; }
 #menuButton:hover { background-color: #444; }
 #menuButton .bar { 
   width: 30px; 
@@ -144,18 +162,6 @@ button:active { transform: scale(0.9); }
   font-size: 1.2em;
   color: #4CAF50;
 }
-#closeMenu { 
-  background-color: #f44336; 
-  color: white; 
-  padding: 10px 25px; 
-  border: none; 
-  border-radius: 10px; 
-  cursor: pointer; 
-  font-size: 1em; 
-  margin-top: 15px; 
-  width: 100%;
-}
-#closeMenu:hover { background-color: #da190b; }
 
 #resetOverlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:999; color:white; justify-content:center; align-items:center; }
 #resetBox { background:#222; padding:30px; border-radius:15px; text-align:center; max-width:400px; }
@@ -180,7 +186,31 @@ button:active { transform: scale(0.9); }
 .shopItem button:hover { background-color:#45a049; }
 .shopItem button:disabled { background-color:#666; cursor:not-allowed; }
 .shopItem .owned { color:#4CAF50; font-weight:bold; }
-#closeShop { background-color:#f44336; color:white; padding:10px 20px; border:none; border-radius:5px; cursor:pointer; margin-top:20px; }
+
+.closeButton { 
+  position: fixed; 
+  top: 20px; 
+  right: 20px; 
+  width: 45px; 
+  height: 45px; 
+  background: #f44336; 
+  color: white; 
+  border: none; 
+  border-radius: 8px; 
+  font-size: 1.8em; 
+  cursor: pointer; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  transition: background-color 0.2s; 
+  box-shadow: 0 4px 15px rgba(244,67,54,0.6);
+  z-index: 10001;
+  font-weight: normal;
+  line-height: 1;
+}
+.closeButton:hover { 
+  background: #da190b; 
+}
 
 #questsButton { background-color:#9C27B0; color:white; margin-top:10px; }
 #questsOverlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); z-index:1000; justify-content:center; align-items:center; }
@@ -196,7 +226,6 @@ button:active { transform: scale(0.9); }
 .questItem.completed .progressBar { background:#4CAF50; }
 .questItem .reward { color:#FFD700; font-weight:bold; }
 .questItem .checkmark { position:absolute; top:10px; right:10px; color:#4CAF50; font-size:1.5em; }
-#closeQuests { background-color:#f44336; color:white; padding:10px 20px; border:none; border-radius:5px; cursor:pointer; margin-top:20px; }
 
 #codesButton { background-color:#673AB7; color:white; margin-top:10px; }
 #codesOverlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); z-index:1000; justify-content:center; align-items:center; }
@@ -206,7 +235,6 @@ button:active { transform: scale(0.9); }
 #codeInput::placeholder { color:#888; }
 #submitCode { background-color:#673AB7; color:white; padding:15px 30px; border:none; border-radius:10px; cursor:pointer; font-size:1.1em; margin:10px; }
 #submitCode:hover { background-color:#5E35B1; }
-#closeCodes { background-color:#f44336; color:white; padding:15px 30px; border:none; border-radius:10px; cursor:pointer; font-size:1.1em; margin:10px; }
 .codeHistory { margin-top:20px; padding:15px; background:#333; border-radius:10px; max-height:200px; overflow-y:auto; }
 .codeHistory h3 { color:#673AB7; margin-top:0; }
 .codeHistoryItem { padding:8px; margin:5px 0; background:#444; border-radius:5px; border-left:3px solid #4CAF50; }
@@ -227,8 +255,9 @@ button:active { transform: scale(0.9); }
 .inventoryItem.equipped { border-color:#4CAF50; background:#1a3a1a; }
 .inventoryItem.equipped::after { content:'✓ ZAŁOŻONY'; position:absolute; top:5px; right:5px; background:#4CAF50; color:white; padding:3px 8px; border-radius:5px; font-size:0.7em; }
 .inventoryItem .itemIcon { font-size:3em; margin-bottom:10px; }
-.inventoryItem .itemName { color:#00BCD4; font-weight:bold; font-size:1.1em; margin:10px 0; }
+.inventoryItem .itemName { color:#00BCD4; font-weight:bold; font-size:1.1em; margin:10px 0; min-height:2.4em; display:flex; align-items:center; justify-content:center; }
 .inventoryItem .itemRarity { color:#FFD700; font-size:0.9em; }
+.inventoryItem .itemCount { color:#aaa; font-size:0.85em; margin-top:5px; }
 .emptySlot { background:#1a1a1a; border:2px dashed #444; border-radius:10px; padding:40px 15px; text-align:center; color:#666; }
 #itemDetailOverlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1001; justify-content:center; align-items:center; }
 #itemDetailBox { background:#222; padding:30px; border-radius:15px; width:400px; border:2px solid #00BCD4; text-align:center; }
@@ -240,7 +269,6 @@ button:active { transform: scale(0.9); }
 #equipButton:hover { background-color:#45a049; }
 #equipButton:disabled { background-color:#666; cursor:not-allowed; }
 #closeItemDetail { background-color:#f44336; color:white; padding:12px 25px; border:none; border-radius:10px; cursor:pointer; font-size:1em; margin-top:10px; width:80%; display:block; margin-left:auto; margin-right:auto; }
-#closeInventory { background-color:#f44336; color:white; padding:12px 30px; border:none; border-radius:10px; cursor:pointer; font-size:1.1em; margin-top:20px; width:100%; }
 
 /* Custom Popup */
 .custom-popup { 
@@ -300,8 +328,6 @@ button:active { transform: scale(0.9); }
   <button class="upgradeButton disabled" id="toggleAutoRoll">Kup Auto-Roll 5000 monet</button>
 </div>
 
-<div id="history">Historia losowań:</div>
-
 <div id="resetProgress">RESET PROGRESS</div>
 
 <!-- Reset overlay -->
@@ -315,6 +341,7 @@ button:active { transform: scale(0.9); }
 
 <!-- Shop overlay -->
 <div id="shopOverlay">
+  <button class="closeButton" id="closeShop">✕</button>
   <div id="shopBox">
     <h2>🛒 SKLEP PAWEŁKÓW</h2>
     <p style="color:#ccc;">Zbieraj wylosowane Pawełki i wymień je na potężne ulepszenia!</p>
@@ -356,23 +383,22 @@ button:active { transform: scale(0.9); }
       </ul>
       <button id="buyUltimatePawel">Kup Ultimate Pawel</button>
     </div>
-
-    <button id="closeShop">Zamknij sklep</button>
   </div>
 </div>
 
 <!-- Quests overlay -->
 <div id="questsOverlay">
+  <button class="closeButton" id="closeQuests">✕</button>
   <div id="questsBox">
     <h2>📋 QUESTY</h2>
     <p style="color:#ccc;">Wykonuj questy aby zdobyć dodatkowe nagrody!</p>
     <div id="questsList"></div>
-    <button id="closeQuests">Zamknij questy</button>
   </div>
 </div>
 
 <!-- Codes overlay -->
 <div id="codesOverlay">
+  <button class="closeButton" id="closeCodes">✕</button>
   <div id="codesBox">
     <h2>🎁 KODY PROMOCYJNE</h2>
     <p style="color:#ccc;">Wpisz kod aby otrzymać ekskluzywne nagrody!</p>
@@ -380,7 +406,6 @@ button:active { transform: scale(0.9); }
     <input type="text" id="codeInput" placeholder="WPISZ KOD TUTAJ" maxlength="50">
     <br>
     <button id="submitCode">Aktywuj Kod</button>
-    <button id="closeCodes">Zamknij</button>
     <div class="codeHistory">
       <h3>Użyte kody:</h3>
       <div id="usedCodesList">Brak użytych kodów</div>
@@ -390,6 +415,7 @@ button:active { transform: scale(0.9); }
 
 <!-- Menu overlay -->
 <div id="menuOverlay">
+  <button class="closeButton" id="closeMenu">✕</button>
   <div id="menuBox">
     <h2>📊 MENU</h2>
     
@@ -437,13 +463,12 @@ button:active { transform: scale(0.9); }
       <div class="devItem">KoleszkaPP</div>
       <div class="devItem">its4iko</div>
     </div>
-    
-    <button id="closeMenu">Zamknij Menu</button>
   </div>
 </div>
 
 <!-- Inventory overlay -->
 <div id="inventoryOverlay">
+  <button class="closeButton" id="closeInventory">✕</button>
   <div id="inventoryBox">
     <h2>🎒 EKWIPUNEK</h2>
     
@@ -463,8 +488,6 @@ button:active { transform: scale(0.9); }
         <!-- Gears będą tutaj generowane dynamicznie -->
       </div>
     </div>
-    
-    <button id="closeInventory">Zamknij</button>
   </div>
 </div>
 
@@ -601,6 +624,15 @@ function showPopup(message, type = 'success') {
   }, 2500);
 }
 
+// ===== MENU BUTTON VISIBILITY =====
+function hideMenuButton() {
+  document.getElementById('menuButton').classList.add('hidden');
+}
+
+function showMenuButton() {
+  document.getElementById('menuButton').classList.remove('hidden');
+}
+
 // ===== FUNKCJE =====
 function updateQuests(fromRoll = false) {
   // Aktualizuj postęp questów TYLKO gdy fromRoll = true (po losowaniu)
@@ -658,12 +690,6 @@ function updateQuestsUI() {
 }
 
 function updateUI(fromRoll = false){
-  let historyHTML='';
-  for(const[key,val] of Object.entries(historyData)){
-    historyHTML+=`${key} (x${val})<br>`;
-  }
-  document.getElementById('history').innerHTML = historyHTML||'Historia losowań: brak';
-  
   document.getElementById('coins').textContent = coins;
 
   // aktualizacja listy szans (bez Śledziu)
@@ -918,10 +944,12 @@ const closeShop = document.getElementById('closeShop');
 shopButton.addEventListener('click', () => {
   updateShopUI();
   shopOverlay.style.display = 'flex';
+  hideMenuButton();
 });
 
 closeShop.addEventListener('click', () => {
   shopOverlay.style.display = 'none';
+  showMenuButton();
 });
 
 function updateShopUI() {
@@ -1047,10 +1075,12 @@ const closeQuests = document.getElementById('closeQuests');
 questsButton.addEventListener('click', () => {
   updateQuestsUI();
   questsOverlay.style.display = 'flex';
+  hideMenuButton();
 });
 
 closeQuests.addEventListener('click', () => {
   questsOverlay.style.display = 'none';
+  showMenuButton();
 });
 
 // ===== KODY =====
@@ -1063,10 +1093,12 @@ const codeInput = document.getElementById('codeInput');
 codesButton.addEventListener('click', () => {
   updateCodesUI();
   codesOverlay.style.display = 'flex';
+  hideMenuButton();
 });
 
 closeCodes.addEventListener('click', () => {
   codesOverlay.style.display = 'none';
+  showMenuButton();
 });
 
 submitCode.addEventListener('click', () => {
@@ -1115,12 +1147,28 @@ const gearData = {
   'Ultimate Pawel': { icon: '👑', multiplier: 3, description: 'Mnożnik szczęścia: 3x', rarity: 'Ultra Legendary' }
 };
 
+const pawelItemsData = {
+  'gejmingowy paweł': { icon: '🎮', rarity: 'Common', description: 'Klasyczny gejmingowy Paweł. Najczęściej spotykany w przyrodzie.' },
+  'paweł prezydent': { icon: '🎩', rarity: 'Uncommon', description: 'Paweł w stroju prezydenta. Lider wśród Pawełków.' },
+  'pawel w zoltym hoodie': { icon: '👕', rarity: 'Rare', description: 'Paweł w modnym żółtym hoodie. Rzadko spotykany.' },
+  'funni paweł': { icon: '😂', rarity: 'Epic', description: 'Zabawny Paweł, który zawsze wywołuje uśmiech.' },
+  'paweł ok': { icon: '👌', rarity: 'Mythic', description: 'Mityczny Paweł pokazujący znak OK. Bardzo rzadki.' },
+  'świąteczny paweł': { icon: '🎄', rarity: 'Legendary', description: 'Legendarny świąteczny Paweł. Pojawia się bardzo rzadko.' },
+  'paweł dostaje backshoty': { icon: '💥', rarity: 'Ultra Legendary', description: 'Ultra legendarny Paweł w akcji. Niezwykle rzadki.' },
+  'paweł komunista': { icon: '☭', rarity: 'Ultra Legendary', description: 'Ultra legendarny Paweł komunista. Ekstremalnie rzadki.' },
+  'Śledziu': { icon: '🐟', rarity: 'Secret', description: 'Tajemniczy Śledź. Najrzadsza istota w całym wszechświecie Pawełków.' }
+};
+
 function updateInventoryUI() {
-  // Items section
+  // Items section - pokazuje Pawełki i Tajemniczy Przedmiot
   const itemsGrid = document.getElementById('itemsGrid');
   itemsGrid.innerHTML = '';
   
+  let hasItems = false;
+  
+  // Najpierw Tajemniczy Przedmiot
   if(inventory.includes('Tajemniczy Przedmiot')) {
+    hasItems = true;
     const itemDiv = document.createElement('div');
     itemDiv.className = 'inventoryItem';
     itemDiv.innerHTML = `
@@ -1130,8 +1178,28 @@ function updateInventoryUI() {
     `;
     itemDiv.addEventListener('click', () => showItemDetail('Tajemniczy Przedmiot', '📦', 'Unikalny', 'Ten przedmiot pozwala na zdobycie rzeczy jeszcze niesłyszanych...', false));
     itemsGrid.appendChild(itemDiv);
-  } else {
-    itemsGrid.innerHTML = '<div class="emptySlot">Brak przedmiotów</div>';
+  }
+  
+  // Potem wszystkie wylosowane Pawełki
+  for(const [pawelName, count] of Object.entries(historyData)) {
+    if(count > 0 && pawelItemsData[pawelName]) {
+      hasItems = true;
+      const pawelData = pawelItemsData[pawelName];
+      const itemDiv = document.createElement('div');
+      itemDiv.className = 'inventoryItem';
+      itemDiv.innerHTML = `
+        <div class="itemIcon">${pawelData.icon}</div>
+        <div class="itemName">${pawelName}</div>
+        <div class="itemRarity">${pawelData.rarity}</div>
+        <div class="itemCount">x${count}</div>
+      `;
+      itemDiv.addEventListener('click', () => showItemDetail(pawelName, pawelData.icon, pawelData.rarity, pawelData.description, false));
+      itemsGrid.appendChild(itemDiv);
+    }
+  }
+  
+  if(!hasItems) {
+    itemsGrid.innerHTML = '<div class="emptySlot">Brak przedmiotów<br><small>Losuj aby zdobyć Pawełki!</small></div>';
   }
   
   // Gears section
@@ -1203,6 +1271,7 @@ function equipGear(gearName) {
 inventoryButton.addEventListener('click', () => {
   updateInventoryUI();
   inventoryOverlay.style.display = 'flex';
+  hideMenuButton();
   // Reset to items tab
   itemsTab.classList.add('active');
   gearsTab.classList.remove('active');
@@ -1212,6 +1281,7 @@ inventoryButton.addEventListener('click', () => {
 
 closeInventory.addEventListener('click', () => {
   inventoryOverlay.style.display = 'none';
+  showMenuButton();
 });
 
 itemsTab.addEventListener('click', () => {
@@ -1244,6 +1314,7 @@ const devsSection = document.getElementById('devsSection');
 menuButton.addEventListener('click', () => {
   updateMenuStats();
   menuOverlay.style.display = 'flex';
+  hideMenuButton();
   // Reset to stats tab when opening
   statsTab.classList.add('active');
   devsTab.classList.remove('active');
@@ -1253,6 +1324,7 @@ menuButton.addEventListener('click', () => {
 
 closeMenu.addEventListener('click', () => {
   menuOverlay.style.display = 'none';
+  showMenuButton();
 });
 
 statsTab.addEventListener('click', () => {
