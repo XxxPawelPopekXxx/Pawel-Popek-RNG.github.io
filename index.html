@@ -26,7 +26,136 @@ button:active { transform: scale(0.9); }
 #inventory, #history, #cooldownDisplay { margin-top:15px; font-size:1.1em; }
 #history { max-height:200px; overflow-y:auto; border:1px solid #555; padding:10px; border-radius:10px; width:90%; margin:10px auto; background-color:#222; }
 
-#stats { position:fixed; top:10px; right:10px; background-color:#222; border:1px solid #555; padding:10px; border-radius:10px; text-align:left; width:250px; font-size:0.9em; }
+#menuButton { 
+  position: fixed; 
+  top: 15px; 
+  right: 15px; 
+  width: 50px; 
+  height: 50px; 
+  background-color: #333; 
+  border: 2px solid #555; 
+  border-radius: 10px; 
+  cursor: pointer; 
+  display: flex; 
+  flex-direction: column; 
+  justify-content: center; 
+  align-items: center; 
+  gap: 6px;
+  transition: background-color 0.3s;
+  z-index: 1001;
+}
+#menuButton:hover { background-color: #444; }
+#menuButton .bar { 
+  width: 30px; 
+  height: 3px; 
+  background-color: #fff; 
+  border-radius: 2px; 
+}
+
+#menuOverlay { 
+  display: none; 
+  position: fixed; 
+  top: 0; 
+  left: 0; 
+  width: 100%; 
+  height: 100%; 
+  background: rgba(0,0,0,0.85); 
+  z-index: 1000; 
+  justify-content: center; 
+  align-items: center; 
+}
+#menuBox { 
+  background: #222; 
+  padding: 25px; 
+  border-radius: 15px; 
+  width: 400px;
+  border: 2px solid #4CAF50; 
+}
+#menuBox h2 { 
+  color: #4CAF50; 
+  margin-top: 0; 
+  margin-bottom: 20px;
+  text-align: center;
+}
+.menuButtons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.menuTabButton {
+  flex: 1;
+  padding: 12px;
+  background: #333;
+  color: #aaa;
+  border: 2px solid #555;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.1em;
+  transition: all 0.3s;
+}
+.menuTabButton.active {
+  background: #4CAF50;
+  color: white;
+  border-color: #4CAF50;
+}
+.menuTabButton:hover {
+  background: #444;
+}
+.menuTabButton.active:hover {
+  background: #45a049;
+}
+.menuSection { 
+  display: none;
+  background: #333; 
+  padding: 20px; 
+  border-radius: 10px; 
+  border: 1px solid #555; 
+}
+.menuSection.active {
+  display: block;
+}
+.menuSection h3 { 
+  color: #4CAF50; 
+  margin-top: 0; 
+  margin-bottom: 15px;
+  border-bottom: 2px solid #555;
+  padding-bottom: 10px;
+}
+.statItem { 
+  padding: 8px 0; 
+  font-size: 1em; 
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.statLabel { 
+  color: #aaa; 
+}
+.statValue { 
+  color: #4CAF50; 
+  font-weight: bold; 
+}
+.devItem {
+  padding: 10px;
+  margin: 5px 0;
+  background: #444;
+  border-radius: 5px;
+  text-align: center;
+  font-size: 1.2em;
+  color: #4CAF50;
+}
+#closeMenu { 
+  background-color: #f44336; 
+  color: white; 
+  padding: 10px 25px; 
+  border: none; 
+  border-radius: 10px; 
+  cursor: pointer; 
+  font-size: 1em; 
+  margin-top: 15px; 
+  width: 100%;
+}
+#closeMenu:hover { background-color: #da190b; }
 
 #resetOverlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:999; color:white; justify-content:center; align-items:center; }
 #resetBox { background:#222; padding:30px; border-radius:15px; text-align:center; max-width:400px; }
@@ -109,12 +238,10 @@ button:active { transform: scale(0.9); }
 
 <h1>Paweł RNG</h1>
 
-<div id="stats">
-  <div>Monety: <span id="statsCoins">0</span></div>
-  <div>Autorzy: KoleszkaPP i its4iko</div>
-  <div>Play Time: <span id="statsPlayTime">0s</span></div>
-  <div>Łączne losowania: <span id="statsRolls">0</span></div>
-  <div>Mnożnik szczęścia: <span id="statsLuck">1.00x</span></div>
+<div id="menuButton">
+  <div class="bar"></div>
+  <div class="bar"></div>
+  <div class="bar"></div>
 </div>
 
 <img id="resultImage" src="photo.png" alt="Result">
@@ -229,6 +356,60 @@ button:active { transform: scale(0.9); }
   </div>
 </div>
 
+<!-- Menu overlay -->
+<div id="menuOverlay">
+  <div id="menuBox">
+    <h2>📊 MENU</h2>
+    
+    <div class="menuButtons">
+      <button class="menuTabButton active" id="statsTab">Statystyki</button>
+      <button class="menuTabButton" id="devsTab">Deweloperzy</button>
+    </div>
+    
+    <div class="menuSection active" id="statsSection">
+      <div class="statItem">
+        <span class="statLabel">Łączne monety:</span>
+        <span class="statValue" id="menuTotalCoins">0</span>
+      </div>
+      <div class="statItem">
+        <span class="statLabel">Aktualne monety:</span>
+        <span class="statValue" id="menuCurrentCoins">0</span>
+      </div>
+      <div class="statItem">
+        <span class="statLabel">Łączne losowania:</span>
+        <span class="statValue" id="menuTotalRolls">0</span>
+      </div>
+      <div class="statItem">
+        <span class="statLabel">Mnożnik szczęścia:</span>
+        <span class="statValue" id="menuLuckMultiplier">1.00x</span>
+      </div>
+      <div class="statItem">
+        <span class="statLabel">Wykonane questy:</span>
+        <span class="statValue" id="menuCompletedQuests">0/15</span>
+      </div>
+      <div class="statItem">
+        <span class="statLabel">Skrócenie cooldownu:</span>
+        <span class="statValue" id="menuCooldownUpgrades">0</span>
+      </div>
+      <div class="statItem">
+        <span class="statLabel">Ulepszenia szans:</span>
+        <span class="statValue" id="menuChanceUpgrades">0</span>
+      </div>
+      <div class="statItem">
+        <span class="statLabel">Czas gry:</span>
+        <span class="statValue" id="menuPlayTime">0s</span>
+      </div>
+    </div>
+    
+    <div class="menuSection" id="devsSection">
+      <div class="devItem">KoleszkaPP</div>
+      <div class="devItem">its4iko</div>
+    </div>
+    
+    <button id="closeMenu">Zamknij Menu</button>
+  </div>
+</div>
+
 <div id="chanceList"></div>
 
 <audio id="backgroundMusic"></audio>
@@ -269,11 +450,16 @@ const bgMusic = document.getElementById('backgroundMusic');
 let musicStarted = false;
 let currentMusicIndex = 0;
 
+// Obsługa błędów ładowania muzyki - cicha obsługa
+bgMusic.addEventListener('error', (e) => {
+  musicStarted = false;
+});
+
 // Obsługa zakończenia utworu - automatyczne przełączanie
 bgMusic.addEventListener('ended', () => {
   currentMusicIndex = (currentMusicIndex + 1) % musicFiles.length;
   bgMusic.src = musicFiles[currentMusicIndex];
-  bgMusic.play().catch(err => console.log(err));
+  bgMusic.play().catch(err => {});
 });
 
 // ===== ZMIENNE =====
@@ -292,6 +478,11 @@ let playTimeStart = localStorage.getItem('playTimeStart') !== null ? parseInt(lo
 // Mnożniki szczęścia ze sklepu
 let luckMultiplier = localStorage.getItem('luckMultiplier') !== null ? parseFloat(localStorage.getItem('luckMultiplier')) : 1;
 let ownedShopItems = localStorage.getItem('ownedShopItems') ? JSON.parse(localStorage.getItem('ownedShopItems')) : [];
+
+// Liczniki ulepszeń
+let cooldownUpgrades = localStorage.getItem('cooldownUpgrades') !== null ? parseInt(localStorage.getItem('cooldownUpgrades')) : 0;
+let chanceUpgrades = localStorage.getItem('chanceUpgrades') !== null ? parseInt(localStorage.getItem('chanceUpgrades')) : 0;
+let totalCoinsEarned = localStorage.getItem('totalCoinsEarned') !== null ? parseInt(localStorage.getItem('totalCoinsEarned')) : coins;
 
 // Questy
 let quests = localStorage.getItem('quests') ? JSON.parse(localStorage.getItem('quests')) : [
@@ -317,7 +508,8 @@ let usedCodes = localStorage.getItem('usedCodes') ? JSON.parse(localStorage.getI
 const promoCodes = {
   'SLEDZIUFEMBOY': 1000,
   'PAWEL': 100,
-  'SUPERCALIFRAGILISTICEXPIALIDOCIOUS': 1500
+  'SUPERCALIFRAGILISTICEXPIALIDOCIOUS': 1500,
+  'UPDATE1': 2000
 };
 
 // ===== CUSTOM POPUP =====
@@ -393,7 +585,6 @@ function updateQuestsUI() {
 }
 
 function updateUI(fromRoll = false){
-  document.getElementById('statsPlayTime').textContent = playTime+'s';
   document.getElementById('inventory').textContent = inventory.length?`Ekwipunek: ${inventory.join(', ')}`:'Ekwipunek: brak';
 
   let historyHTML='';
@@ -403,9 +594,6 @@ function updateUI(fromRoll = false){
   document.getElementById('history').innerHTML = historyHTML||'Historia losowań: brak';
   
   document.getElementById('coins').textContent = coins;
-  document.getElementById('statsCoins').textContent = coins;
-  document.getElementById('statsRolls').textContent = totalRolls;
-  document.getElementById('statsLuck').textContent = luckMultiplier.toFixed(2) + 'x';
 
   // aktualizacja listy szans (bez Śledziu)
   const chanceList = document.getElementById('chanceList');
@@ -512,6 +700,8 @@ function rollRNG(showRareAnimationOnly=false){
       let reward=selected.reward;
       if(inventory.length>0) reward=Math.floor(reward*(1+0.05*inventory.length));
       coins+=reward;
+      totalCoinsEarned+=reward;
+      localStorage.setItem('totalCoinsEarned', totalCoinsEarned);
       if(historyData[selected.text]) historyData[selected.text]++;
       else historyData[selected.text]=1;
       imgElem.style.transform='scale(1) rotate(0deg)';
@@ -533,7 +723,12 @@ document.getElementById('rollButton').addEventListener('click', async ()=>{
   if(!musicStarted){
     currentMusicIndex = 0;
     bgMusic.src = musicFiles[currentMusicIndex];
-    try{ await bgMusic.play(); musicStarted=true;}catch(err){console.log(err);}
+    try{ 
+      await bgMusic.play(); 
+      musicStarted=true;
+    } catch(err) {
+      musicStarted=false;
+    }
   }
   rollRNG(true);
 });
@@ -545,7 +740,9 @@ document.getElementById('volumeControl').addEventListener('input',(e)=>{ bgMusic
 document.getElementById('shortenCooldown').addEventListener('click',()=>{
   if(coins>=50 && cooldown>1000){ 
     coins-=50; 
-    cooldown=Math.max(1000,cooldown-500); 
+    cooldown=Math.max(1000,cooldown-500);
+    cooldownUpgrades++;
+    localStorage.setItem('cooldownUpgrades', cooldownUpgrades);
     updateUI(); 
     showPopup(`Cooldown skrócony! Teraz ${(cooldown/1000).toFixed(1)}s`, 'success');
   } else if(cooldown <= 1000) {
@@ -558,6 +755,8 @@ document.getElementById('shortenCooldown').addEventListener('click',()=>{
 document.getElementById('increaseChances').addEventListener('click',()=>{
   if(coins>=100){
     coins-=100;
+    chanceUpgrades++;
+    localStorage.setItem('chanceUpgrades', chanceUpgrades);
     images.forEach(img=>{
       if(img.text === 'Śledziu') return; // Nie modyfikujemy szansy Śledzia
       if(img.text==='gejmingowy paweł' || img.text==='paweł prezydent'){
@@ -820,6 +1019,8 @@ submitCode.addEventListener('click', () => {
   
   if(promoCodes[code]) {
     coins += promoCodes[code];
+    totalCoinsEarned += promoCodes[code];
+    localStorage.setItem('totalCoinsEarned', totalCoinsEarned);
     usedCodes.push(code);
     localStorage.setItem('usedCodes', JSON.stringify(usedCodes));
     updateUI();
@@ -829,6 +1030,43 @@ submitCode.addEventListener('click', () => {
   } else {
     showPopup('Nieprawidłowy kod!', 'error');
   }
+});
+
+// ===== MENU =====
+const menuOverlay = document.getElementById('menuOverlay');
+const menuButton = document.getElementById('menuButton');
+const closeMenu = document.getElementById('closeMenu');
+const statsTab = document.getElementById('statsTab');
+const devsTab = document.getElementById('devsTab');
+const statsSection = document.getElementById('statsSection');
+const devsSection = document.getElementById('devsSection');
+
+menuButton.addEventListener('click', () => {
+  updateMenuStats();
+  menuOverlay.style.display = 'flex';
+  // Reset to stats tab when opening
+  statsTab.classList.add('active');
+  devsTab.classList.remove('active');
+  statsSection.classList.add('active');
+  devsSection.classList.remove('active');
+});
+
+closeMenu.addEventListener('click', () => {
+  menuOverlay.style.display = 'none';
+});
+
+statsTab.addEventListener('click', () => {
+  statsTab.classList.add('active');
+  devsTab.classList.remove('active');
+  statsSection.classList.add('active');
+  devsSection.classList.remove('active');
+});
+
+devsTab.addEventListener('click', () => {
+  devsTab.classList.add('active');
+  statsTab.classList.remove('active');
+  devsSection.classList.add('active');
+  statsSection.classList.remove('active');
 });
 
 function updateCodesUI() {
@@ -847,10 +1085,23 @@ function updateCodesUI() {
   }
 }
 
+function updateMenuStats() {
+  document.getElementById('menuTotalCoins').textContent = totalCoinsEarned;
+  document.getElementById('menuCurrentCoins').textContent = coins;
+  document.getElementById('menuTotalRolls').textContent = totalRolls;
+  document.getElementById('menuLuckMultiplier').textContent = luckMultiplier.toFixed(2) + 'x';
+  
+  const completedQuests = quests.filter(q => q.completed).length;
+  document.getElementById('menuCompletedQuests').textContent = `${completedQuests}/${quests.length}`;
+  
+  document.getElementById('menuCooldownUpgrades').textContent = cooldownUpgrades;
+  document.getElementById('menuChanceUpgrades').textContent = chanceUpgrades;
+  document.getElementById('menuPlayTime').textContent = playTime + 's';
+}
+
 // ===== AUTO-SAVE & PLAYTIME UPDATE =====
 setInterval(()=>{
   playTime += 1; // Dodaj 1 sekundę
-  document.getElementById('statsPlayTime').textContent = playTime+'s'; // Aktualizuj UI
   localStorage.setItem('playTime', playTime);
   localStorage.setItem('autoRollEnabled', autoRollEnabled);
   localStorage.setItem('autoRollPurchased', autoRollPurchased);
