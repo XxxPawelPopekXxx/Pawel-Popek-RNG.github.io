@@ -9,44 +9,44 @@ body{
   color:white;
   font-family:Arial;
   text-align:center;
+  margin:0;
 }
 
 button{
   padding:12px 25px;
   border:none;
   border-radius:12px;
-  font-size:1.1em;
+  font-size:1.05em;
   cursor:pointer;
   margin:5px;
+  transition:0.15s;
 }
+button:active{transform:scale(0.9);}
 
 #rollButton{background:#4CAF50;color:white;}
 #muteButton{background:#f44336;color:white;}
 .upgradeButton{background:#2196F3;color:white;}
 
 #resultImage{
-  width:280px;
-  height:280px;
+  width:260px;
+  height:260px;
   border-radius:15px;
   margin:20px auto;
   transition:0.25s;
+  display:block;
 }
 
 /* ANIMACJE */
-.rollAnim{
-  animation: rollShake 0.4s ease;
-}
+.rollAnim{animation: rollShake 0.4s ease;}
 @keyframes rollShake{
-  0%{transform:rotate(0deg) scale(1);}
-  25%{transform:rotate(5deg) scale(1.05);}
-  50%{transform:rotate(-5deg) scale(1.1);}
-  75%{transform:rotate(5deg) scale(1.05);}
-  100%{transform:rotate(0deg) scale(1);}
+  0%{transform:scale(1);}
+  25%{transform:scale(1.05) rotate(3deg);}
+  50%{transform:scale(1.1) rotate(-3deg);}
+  75%{transform:scale(1.05) rotate(3deg);}
+  100%{transform:scale(1);}
 }
 
-.flash{
-  animation: flash 0.25s ease;
-}
+.flash{animation: flash 0.25s ease;}
 @keyframes flash{
   0%{filter:brightness(1);}
   50%{filter:brightness(2);}
@@ -58,10 +58,11 @@ button{
   border:1px solid #555;
   padding:10px;
   width:90%;
-  margin:auto;
+  margin:10px auto;
   max-height:200px;
   overflow-y:auto;
   border-radius:10px;
+  text-align:left;
 }
 
 #stats{
@@ -74,6 +75,7 @@ button{
   border:1px solid #555;
   width:230px;
   text-align:left;
+  font-size:0.9em;
 }
 
 #resetProgress{
@@ -101,6 +103,34 @@ button{
   padding:25px;
   border-radius:15px;
 }
+
+#shopOverlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.8);
+  display:none;
+  justify-content:center;
+  align-items:center;
+  z-index:1000;
+}
+#shopBox{
+  background:#222;
+  padding:20px;
+  border-radius:15px;
+  width:350px;
+  max-height:80%;
+  overflow-y:auto;
+}
+.shopItem{
+  border:1px solid #555;
+  border-radius:10px;
+  padding:10px;
+  margin:10px 0;
+}
+
+#upgrades{
+  margin-top:15px;
+}
 </style>
 </head>
 <body>
@@ -122,27 +152,70 @@ button{
 <button id="rollButton">ROLL</button>
 <div id="cooldownDisplay">Cooldown: 2.0s</div>
 
-<div>Monety: <span id="coins">0</span></div>
+<div style="margin-top:10px;">
+Monety: <span id="coins">0</span>
+</div>
+
+<div id="upgrades">
+  <button class="upgradeButton" id="openShop">Sklep</button>
+  <button class="upgradeButton" id="buyItem">Tajemniczy Przedmiot (100)</button>
+  <button class="upgradeButton" id="toggleAutoRoll">Auto-Roll (5000)</button>
+</div>
+
+<div style="margin-top:10px;">
+  Głośność muzyki:
+  <input type="range" id="volumeControl" min="0" max="100" value="50">
+  <button id="muteButton">Mute / Unmute</button>
+</div>
 
 <h3>Historia:</h3>
 <div id="history"></div>
 
 <div id="resetProgress">RESET PROGRESS</div>
 
+<!-- RESET -->
 <div id="resetOverlay">
   <div id="resetBox">
-    <p>Czy na pewno zresetować cały progres?</p>
+    <p>Czy na pewno chcesz zresetować cały progres?</p>
     <button id="resetYes" style="background:green;color:white;">TAK</button>
     <button id="resetNo" style="background:red;color:white;">NIE</button>
+  </div>
+</div>
+
+<!-- SHOP -->
+<div id="shopOverlay">
+  <div id="shopBox">
+    <h2>Sklep Pawła</h2>
+
+    <div class="shopItem">
+      <b>Lucky Pawel (1.5x Luck)</b><br>
+      Cena: 1000 monet<br>
+      <button onclick="buyShopItem(1.5,1000)">Kup</button>
+    </div>
+
+    <div class="shopItem">
+      <b>Mega Pawel (2x Luck)</b><br>
+      Cena: 2500 monet<br>
+      <button onclick="buyShopItem(2,2500)">Kup</button>
+    </div>
+
+    <div class="shopItem">
+      <b>Ultimate Pawel (3x Luck)</b><br>
+      Cena: 5000 monet<br>
+      <button onclick="buyShopItem(3,5000)">Kup</button>
+    </div>
+
+    <button onclick="closeShop()">Zamknij</button>
   </div>
 </div>
 
 <audio id="backgroundMusic" loop></audio>
 
 <script>
-let coins=0, rolls=0, luck=1, cooldown=2, canRoll=true, playTime=0;
-let inventory=[];
+let coins=0, rolls=0, luck=1, cooldown=2, canRoll=true;
+let playTime=0;
 let autoRoll=false;
+let autoInterval=null;
 
 const coinsEl=document.getElementById("coins");
 const statsCoins=document.getElementById("statsCoins");
@@ -155,38 +228,56 @@ const chanceText=document.getElementById("chanceText");
 const rarityText=document.getElementById("rarityText");
 const historyEl=document.getElementById("history");
 const cooldownDisplay=document.getElementById("cooldownDisplay");
+const bgMusic=document.getElementById("backgroundMusic");
 
+/* MUZYKA (bez efektów dźwiękowych, tylko tło) */
+const musicFiles=["music.mp3","music2.mp3","music3.mp3"];
+function playRandomMusic(){
+  const m=musicFiles[Math.floor(Math.random()*musicFiles.length)];
+  bgMusic.src=m;
+  bgMusic.volume=0.5;
+  bgMusic.play();
+}
+playRandomMusic();
+
+document.getElementById("volumeControl").addEventListener("input",e=>{
+  bgMusic.volume=e.target.value/100;
+});
+document.getElementById("muteButton").onclick=()=>{
+  bgMusic.muted=!bgMusic.muted;
+};
+
+/* ITEMY – nagrody zmniejszone o 50% */
 const items=[
- {src:"photo.png",text:"gejmingowy paweł",chance:50,rarity:"Common",reward:10},
- {src:"photo2.png",text:"paweł prezydent",chance:25,rarity:"Uncommon",reward:25},
- {src:"photo3.png",text:"pawel w żółtym hoodie",chance:15,rarity:"Rare",reward:50},
- {src:"photo4.png",text:"funni paweł",chance:7,rarity:"Epic",reward:100},
- {src:"photo5.png",text:"paweł ok",chance:2,rarity:"Mythic",reward:250},
- {src:"photo6.png",text:"świąteczny paweł",chance:1,rarity:"Legendary",reward:500},
- {src:"photo7.png",text:"paweł dostaje backshoty",chance:0.5,rarity:"Ultra",reward:1500},
- {src:"photo8.png",text:"paweł komunista",chance:0.2,rarity:"GODLIKE",reward:5000}
+ {src:"photo.png",text:"gejmingowy paweł",chance:50,rarity:"Common",reward:5},
+ {src:"photo2.png",text:"paweł prezydent",chance:25,rarity:"Uncommon",reward:12},
+ {src:"photo3.png",text:"pawel w żółtym hoodie",chance:15,rarity:"Rare",reward:25},
+ {src:"photo4.png",text:"funni paweł",chance:7,rarity:"Epic",reward:50},
+ {src:"photo5.png",text:"paweł ok",chance:2,rarity:"Mythic",reward:125},
+ {src:"photo6.png",text:"świąteczny paweł",chance:1,rarity:"Legendary",reward:250},
+ {src:"photo7.png",text:"paweł dostaje backshoty",chance:0.5,rarity:"Ultra",reward:750},
+ {src:"photo8.png",text:"paweł komunista",chance:0.2,rarity:"GODLIKE",reward:2500}
 ];
 
-// PLAYTIME
+/* PLAYTIME */
 setInterval(()=>{
   playTime++;
   statsTime.textContent=playTime;
 },1000);
 
-// ROLL
+/* ROLL */
 function rollRNG(){
  if(!canRoll) return;
  canRoll=false;
  rolls++;
  statsRolls.textContent=rolls;
 
- // animacja
  resultImage.classList.add("rollAnim");
 
  setTimeout(()=>{
-  let totalChance=0;
-  items.forEach(i=>totalChance+=i.chance*luck);
-  let r=Math.random()*totalChance;
+  let total=0;
+  items.forEach(i=>total+=i.chance*luck);
+  let r=Math.random()*total;
   let sum=0, selected;
 
   for(let i of items){
@@ -198,9 +289,6 @@ function rollRNG(){
   resultText.textContent=selected.text;
   chanceText.textContent="Nagroda: +"+selected.reward+" monet";
   rarityText.textContent="Rzadkość: "+selected.rarity;
-
-  resultImage.classList.add("flash");
-  setTimeout(()=>resultImage.classList.remove("flash"),200);
 
   coins+=selected.reward;
   coinsEl.textContent=coins;
@@ -220,36 +308,76 @@ function rollRNG(){
   },100);
 
   resultImage.classList.remove("rollAnim");
- },300);
+ },250);
+}
+document.getElementById("rollButton").onclick=rollRNG;
+
+/* AUTO ROLL */
+document.getElementById("toggleAutoRoll").onclick=()=>{
+  if(!autoRoll){
+    if(coins<5000){alert("Za mało monet!");return;}
+    coins-=5000;
+    coinsEl.textContent=coins;
+    statsCoins.textContent=coins;
+    autoRoll=true;
+    autoInterval=setInterval(()=>{if(canRoll) rollRNG();},300);
+    alert("Auto-Roll włączony!");
+  }else{
+    autoRoll=false;
+    clearInterval(autoInterval);
+    alert("Auto-Roll wyłączony!");
+  }
+};
+
+/* TAJEMNICZY PRZEDMIOT */
+document.getElementById("buyItem").onclick=()=>{
+  if(coins<100){alert("Brak monet");return;}
+  coins-=100;
+  coinsEl.textContent=coins;
+  statsCoins.textContent=coins;
+  const bonus=Math.random()<0.5?"Luck +0.2":"Cooldown -0.2s";
+  if(bonus==="Luck +0.2"){luck+=0.2;statsLuck.textContent=luck.toFixed(2);}
+  else{cooldown=Math.max(0.5,cooldown-0.2);}
+  alert("Tajemniczy bonus: "+bonus);
+};
+
+/* SHOP */
+document.getElementById("openShop").onclick=()=>{
+  document.getElementById("shopOverlay").style.display="flex";
+};
+function closeShop(){
+  document.getElementById("shopOverlay").style.display="none";
+}
+function buyShopItem(mult,price){
+  if(coins<price){alert("Brak monet");return;}
+  coins-=price;
+  luck*=mult;
+  statsLuck.textContent=luck.toFixed(2);
+  coinsEl.textContent=coins;
+  statsCoins.textContent=coins;
+  alert("Kupiono! Nowy Luck: x"+luck.toFixed(2));
 }
 
-document.getElementById("rollButton").addEventListener("click",rollRNG);
-
-// RESET
+/* RESET */
 document.getElementById("resetProgress").onclick=()=>{
   document.getElementById("resetOverlay").style.display="flex";
 };
-
 document.getElementById("resetNo").onclick=()=>{
   document.getElementById("resetOverlay").style.display="none";
 };
-
 document.getElementById("resetYes").onclick=()=>{
-  coins=0;
-  rolls=0;
-  luck=1;
-  cooldown=2;
-  inventory=[];
-  historyEl.innerHTML="";
+  coins=0;rolls=0;luck=1;cooldown=2;autoRoll=false;
+  clearInterval(autoInterval);
   coinsEl.textContent=0;
   statsCoins.textContent=0;
   statsRolls.textContent=0;
   statsLuck.textContent=1;
+  historyEl.innerHTML="";
   resultText.textContent="Kliknij Roll";
   chanceText.textContent="";
   rarityText.textContent="";
   document.getElementById("resetOverlay").style.display="none";
-  alert("Progres został zresetowany!");
+  alert("Progres zresetowany!");
 };
 </script>
 
