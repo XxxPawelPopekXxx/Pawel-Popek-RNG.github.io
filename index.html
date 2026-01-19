@@ -376,6 +376,7 @@ button:active { transform: scale(0.9); }
   <div id="codesBox">
     <h2>🎁 KODY PROMOCYJNE</h2>
     <p style="color:#ccc;">Wpisz kod aby otrzymać ekskluzywne nagrody!</p>
+    <p style="color:#4CAF50; font-weight:bold; font-size:1.1em; margin-top:10px;">Nowy Kod! "UPDATE1"</p>
     <input type="text" id="codeInput" placeholder="WPISZ KOD TUTAJ" maxlength="50">
     <br>
     <button id="submitCode">Aktywuj Kod</button>
@@ -1109,9 +1110,9 @@ const closeItemDetail = document.getElementById('closeItemDetail');
 const equipButton = document.getElementById('equipButton');
 
 const gearData = {
-  'Lucky Pawel': { icon: '🍀', multiplier: 1.5, description: 'Mnożnik szczęścia: 1.5x' },
-  'Mega Pawel': { icon: '💎', multiplier: 2, description: 'Mnożnik szczęścia: 2x' },
-  'Ultimate Pawel': { icon: '👑', multiplier: 3, description: 'Mnożnik szczęścia: 3x' }
+  'Lucky Pawel': { icon: '🍀', multiplier: 1.5, description: 'Mnożnik szczęścia: 1.5x', rarity: 'Common' },
+  'Mega Pawel': { icon: '💎', multiplier: 2, description: 'Mnożnik szczęścia: 2x', rarity: 'Epic' },
+  'Ultimate Pawel': { icon: '👑', multiplier: 3, description: 'Mnożnik szczęścia: 3x', rarity: 'Ultra Legendary' }
 };
 
 function updateInventoryUI() {
@@ -1149,9 +1150,9 @@ function updateInventoryUI() {
       gearDiv.innerHTML = `
         <div class="itemIcon">${gear.icon}</div>
         <div class="itemName">${gearName}</div>
-        <div class="itemRarity">Gear</div>
+        <div class="itemRarity">${gear.rarity}</div>
       `;
-      gearDiv.addEventListener('click', () => showItemDetail(gearName, gear.icon, 'Gear', gear.description, true));
+      gearDiv.addEventListener('click', () => showItemDetail(gearName, gear.icon, gear.rarity, gear.description, true));
       gearsGrid.appendChild(gearDiv);
     }
   });
