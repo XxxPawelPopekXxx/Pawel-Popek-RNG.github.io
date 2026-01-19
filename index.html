@@ -4,404 +4,301 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Paweł RNG</title>
-
 <style>
-body{
-    font-family:Arial;
-    background:#121212;
-    color:white;
-    text-align:center;
-    margin:0;
-    padding:0;
-}
-h1{margin-top:20px;font-size:2em;}
-button{
-    padding:12px 25px;
-    font-size:1.1em;
-    margin:5px;
-    cursor:pointer;
-    border:none;
-    border-radius:10px;
-    transition:0.15s;
-}
-button:active{transform:scale(0.9);}
-#rollButton{background:#4CAF50;color:white;}
-#muteButton{background:#f44336;color:white;}
-.upgradeButton{background:#2196F3;color:white;}
+body { font-family: Arial; background:#121212; color:#fff; text-align:center; margin:0; padding:0; }
+h1 { margin-top:20px; font-size:2em; }
 
-#resultImage{
-    width:300px;
-    height:300px;
-    margin:20px auto;
-    border-radius:15px;
-    object-fit:cover;
-    display:block;
-    transition:0.1s;
-}
+button { padding:15px 30px; font-size:1.2em; margin:10px; cursor:pointer; border:none; border-radius:10px; transition:transform 0.2s; }
+button:active { transform: scale(0.9); }
 
-#currency{margin-top:15px;font-size:1.3em;}
-#cooldownDisplay{margin-top:10px;}
-#inventory,#history{margin-top:15px;}
+#rollButton { background-color:#4CAF50; color:white; }
+#muteButton { background-color:#f44336; color:white; }
+.upgradeButton { background-color:#2196F3; color:white; }
 
-#history{
-    max-height:200px;
-    overflow-y:auto;
-    border:1px solid #555;
-    padding:10px;
-    border-radius:10px;
-    width:90%;
-    margin:10px auto;
-    background:#222;
-}
+#resultImage { width:300px; height:300px; margin:20px auto; object-fit:cover; border-radius:15px; display:block; transition:all 0.1s; }
+#resultText { font-size:1.5em; margin-top:10px; }
+#chanceText, #rarityText { font-size:1.2em; margin-top:5px; }
+#currency { margin-top:20px; font-size:1.3em; }
+#upgrades { margin-top:20px; font-size:1em; display:flex; flex-wrap:wrap; justify-content:center; }
+#upgrades button { margin:5px; }
+#inventory, #history, #cooldownDisplay { margin-top:15px; font-size:1.1em; }
+#history { max-height:200px; overflow-y:auto; border:1px solid #555; padding:10px; border-radius:10px; width:90%; margin:10px auto; background-color:#222; }
 
-#stats{
-    position:fixed;
-    top:10px;
-    right:10px;
-    background:#222;
-    border:1px solid #555;
-    padding:10px;
-    border-radius:10px;
-    width:240px;
-    text-align:left;
-    font-size:0.9em;
-}
+#stats { position:fixed; top:10px; right:10px; background-color:#222; border:1px solid #555; padding:10px; border-radius:10px; text-align:left; width:250px; font-size:0.9em; }
 
-#resetProgress{
-    position:fixed;
-    bottom:10px;
-    left:10px;
-    background:#f44336;
-    color:white;
-    padding:10px 15px;
-    border-radius:10px;
-    font-weight:bold;
-    cursor:pointer;
-}
+#resetOverlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:999; color:white; justify-content:center; align-items:center; }
+#resetBox { background:#222; padding:30px; border-radius:15px; text-align:center; max-width:400px; }
+#resetBox p { font-size:1.5em; color:red; margin-bottom:20px; }
+#resetBox button { margin:10px; padding:10px 20px; font-size:1.2em; border-radius:10px; cursor:pointer; }
+#resetYes { background-color:green; color:white; }
+#resetNo { background-color:red; color:white; }
 
-#resetOverlay{
-    display:none;
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,0.8);
-    z-index:999;
-    justify-content:center;
-    align-items:center;
-}
-#resetBox{
-    background:#222;
-    padding:30px;
-    border-radius:15px;
-}
+#volumeControl { margin-top:15px; }
 
-#shopOverlay{
-    display:none;
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,0.75);
-    z-index:1000;
-    justify-content:center;
-    align-items:center;
-}
-#shopBox{
-    background:#222;
-    padding:25px;
-    border-radius:15px;
-    width:360px;
-}
-
-.shopItem{
-    border:1px solid #555;
-    border-radius:10px;
-    padding:10px;
-    margin:10px 0;
-}
+#resetProgress { position:fixed; bottom:10px; left:10px; background-color:#f44336; color:white; padding:10px 15px; border-radius:10px; font-weight:bold; cursor:pointer; }
+#chanceList { margin-top:10px; font-size:0.9em; color:#ccc; text-align:left; max-width:250px; margin-left:auto; margin-right:auto; }
 </style>
 </head>
-
 <body>
 
 <h1>Paweł RNG</h1>
 
 <div id="stats">
-    <div>Monety: <span id="statsCoins">0</span></div>
-    <div>PlayTime: <span id="statsPlayTime">0s</span></div>
-    <div>Losowania: <span id="statsRolls">0</span></div>
+  <div>Monety: <span id="statsCoins">0</span></div>
+  <div>Autorzy: KoleszkaPP i its4iko</div>
+  <div>Play Time: <span id="statsPlayTime">0s</span></div>
+  <div>Łączne losowania: <span id="statsRolls">0</span></div>
 </div>
 
-<img id="resultImage" src="photo.png">
+<img id="resultImage" src="photo.png" alt="Result">
 <div id="resultText">Kliknij Roll</div>
 <div id="chanceText"></div>
 <div id="rarityText"></div>
-
-<button id="rollButton">ROLL</button>
+<button id="rollButton">Roll</button>
 <div id="cooldownDisplay">Cooldown: 3.0s</div>
 
-<input type="range" min="0" max="100" value="100" id="volumeControl">
-<button id="muteButton">Mute</button>
+<input type="range" min="0" max="100" value="100" id="volumeControl"> Głośność
+<br>
+<button id="muteButton">Mute/Unmute</button>
 
 <div id="currency">Monety: <span id="coins">0</span></div>
 
-<button id="openShop" class="upgradeButton">Sklep</button>
-
 <div id="upgrades">
-    <button class="upgradeButton" id="shortenCooldown">Skróć cooldown (50)</button>
-    <button class="upgradeButton" id="increaseChances">Lepsze szanse (100)</button>
-    <button class="upgradeButton" id="buyItem">Tajemniczy Przedmiot (100)</button>
-    <button class="upgradeButton" id="toggleAutoRoll">Auto Roll (5000)</button>
+  <button class="upgradeButton" id="shortenCooldown">Skróć cooldown (-0.5s) 50 monet</button>
+  <button class="upgradeButton" id="increaseChances">Ulepszenie szans 100 monet</button>
+  <button class="upgradeButton" id="buyItem">Kup Tajemniczy Przedmiot 100 monet</button>
+  <button class="upgradeButton" id="toggleAutoRoll">Włącz Auto-Roll 5000 monet</button>
 </div>
 
 <div id="inventory">Ekwipunek: brak</div>
-<div id="history">Historia:</div>
+<div id="history">Historia losowań:</div>
 
-<div id="resetProgress">RESET</div>
+<div id="resetProgress">RESET PROGRESS</div>
 
+<!-- Reset overlay -->
 <div id="resetOverlay">
   <div id="resetBox">
-    <p>Na pewno zresetować?</p>
-    <button id="resetYes">TAK</button>
-    <button id="resetNo">NIE</button>
+    <p>Czy na pewno chcesz zresetować progres?</p>
+    <button id="resetYes">Tak</button>
+    <button id="resetNo">Nie</button>
   </div>
 </div>
 
-<div id="shopOverlay">
-  <div id="shopBox">
-    <h2>Sklep Pawła</h2>
-    <div class="shopItem">
-      Lucky Paweł (1.5x) – 1000 monet  
-      <button onclick="buyShopItem('lucky')">Kup</button>
-    </div>
-    <div class="shopItem">
-      Mega Paweł (2x) – 2500 monet  
-      <button onclick="buyShopItem('mega')">Kup</button>
-    </div>
-    <div class="shopItem">
-      Ultimate Paweł (3x) – 5000 monet  
-      <button onclick="buyShopItem('ultimate')">Kup</button>
-    </div>
-    <button onclick="closeShop()">Zamknij</button>
-  </div>
-</div>
+<div id="chanceList"></div>
 
 <audio id="backgroundMusic" loop></audio>
 
 <script>
-// =======================
-// CZĘŚĆ LOGIKI 1/2
-// =======================
-
-// RNG dane – każdy Paweł ma reward > 0 (nikt nie daje 0 monet)
-const pawly = [
- {src:"photo.png",text:"gejmingowy paweł",chance:1/2,rarity:"Common",reward:2},
- {src:"photo2.png",text:"paweł prezydent",chance:1/4,rarity:"Uncommon",reward:4},
- {src:"photo3.png",text:"pawel w zoltym hoodie",chance:1/8,rarity:"Rare",reward:6},
- {src:"photo4.png",text:"funni paweł",chance:1/16,rarity:"Epic",reward:10},
- {src:"photo5.png",text:"paweł ok",chance:1/32,rarity:"Mythic",reward:20},
- {src:"photo6.png",text:"świąteczny paweł",chance:1/64,rarity:"Legendary",reward:40},
- {src:"photo7.png",text:"paweł dostaje backshoty",chance:1/128,rarity:"Ultra Legendary",reward:80},
- {src:"photo8.png",text:"paweł komunista",chance:1/256,rarity:"Ultra Legendary",reward:160},
+// ===== DANE =====
+const images = [
+  {src:'photo.png',text:'gejmingowy paweł',chance:1/2,rarity:'Common',reward:1},
+  {src:'photo2.png',text:'paweł prezydent',chance:1/4,rarity:'Uncommon',reward:5},
+  {src:'photo3.png',text:'pawel w zoltym hoodie',chance:1/8,rarity:'Rare',reward:10},
+  {src:'photo4.png',text:'funni paweł',chance:1/16,rarity:'Epic',reward:20},
+  {src:'photo5.png',text:'paweł ok',chance:1/32,rarity:'Mythic',reward:40},
+  {src:'photo6.png',text:'świąteczny paweł',chance:1/64,rarity:'Legendary',reward:80},
+  {src:'photo7.png',text:'paweł dostaje backshoty',chance:1/128,rarity:'Ultra Legendary',reward:160},
+  {src:'photo8.png',text:'paweł komunista',chance:1/256,rarity:'Ultra Legendary',reward:320},
+  {src:'photo9.png',text:'Śledziu',chance:1/1e15,rarity:'Secret',reward:500,requiresItem:'Tajemniczy Przedmiot'}
 ];
 
-// muzyka
-const musicList = ["music.mp3","music2.mp3","music3.mp3"];
-const bgMusic = document.getElementById("backgroundMusic");
-let musicStarted=false;
-
-// zmienne gry
-let coins = Number(localStorage.getItem("coins")) || 0;
-let totalRolls = Number(localStorage.getItem("rolls")) || 0;
-let playTime = Number(localStorage.getItem("playTime")) || 0;
-let cooldown = Number(localStorage.getItem("cooldown")) || 3000;
-let lastRoll = 0;
-let inventory = JSON.parse(localStorage.getItem("inventory")||"[]");
-let historyData = JSON.parse(localStorage.getItem("history")||"{}");
-
-let autoRoll=false;
-let autoRollTimer=null;
-
-// playtime działa poprawnie (co 1s)
-setInterval(()=>{
-    playTime++;
-    document.getElementById("statsPlayTime").textContent = playTime+"s";
-    localStorage.setItem("playTime",playTime);
-},1000);
-
-// UI update
-function updateUI(){
-    document.getElementById("coins").textContent = coins;
-    document.getElementById("statsCoins").textContent = coins;
-    document.getElementById("statsRolls").textContent = totalRolls;
-
-    document.getElementById("inventory").textContent =
-      inventory.length ? "Ekwipunek: "+inventory.join(", ") : "Ekwipunek: brak";
-
-    let h="";
-    for(let k in historyData){
-        h+=`${k} x${historyData[k]}<br>`;
-    }
-    document.getElementById("history").innerHTML = h || "Historia: brak";
-
-    localStorage.setItem("coins",coins);
-    localStorage.setItem("rolls",totalRolls);
-    localStorage.setItem("inventory",JSON.stringify(inventory));
-    localStorage.setItem("history",JSON.stringify(historyData));
-    localStorage.setItem("cooldown",cooldown);
+// ===== WCZYTYWANIE SZANS Z LOCALSTORAGE =====
+const savedChances = localStorage.getItem('imagesChances');
+if(savedChances){
+  const chancesArr = JSON.parse(savedChances);
+  images.forEach((img,i)=>{
+    img.chance = chancesArr[i];
+  });
 }
 
-updateUI();
+const musicFiles = ['music.mp3','music2.mp3','music3.mp3','music4.mp3','music5.mp3'];
+const bgMusic = document.getElementById('backgroundMusic');
+let musicStarted = false;
 
-// ===== MUZYKA =====
-document.getElementById("muteButton").addEventListener("click",()=>{
-    bgMusic.muted = !bgMusic.muted;
-});
-document.getElementById("volumeControl").addEventListener("input",(e)=>{
-    bgMusic.volume = e.target.value/100;
-});
+// ===== ZMIENNE =====
+let coins = localStorage.getItem('coins') !== null ? parseInt(localStorage.getItem('coins')) : 30;
+let inventory = localStorage.getItem('inventory') ? JSON.parse(localStorage.getItem('inventory')) : [];
+let historyData = localStorage.getItem('historyData') ? JSON.parse(localStorage.getItem('historyData')) : {};
+let cooldown = localStorage.getItem('cooldown') !== null ? parseInt(localStorage.getItem('cooldown')) : 3000;
+let lastRoll = 0;
+let totalRolls = localStorage.getItem('totalRolls') !== null ? parseInt(localStorage.getItem('totalRolls')) : 0;
+let autoRollEnabled = localStorage.getItem('autoRollEnabled') !== null ? JSON.parse(localStorage.getItem('autoRollEnabled')) : false;
+let autoRollInterval = null;
+let playTime = localStorage.getItem('playTime') !== null ? parseInt(localStorage.getItem('playTime')) : 0;
+let playTimeStart = Date.now();
+
+// ===== FUNKCJE =====
+function updateUI(){
+  const elapsed = Math.floor((Date.now()-playTimeStart)/1000);
+  document.getElementById('statsPlayTime').textContent = (playTime+elapsed)+'s';
+  document.getElementById('inventory').textContent = inventory.length?`Ekwipunek: ${inventory.join(', ')}`:'Ekwipunek: brak';
+
+  let historyHTML='';
+  for(const[key,val] of Object.entries(historyData)){
+    historyHTML+=`${key} (x${val})<br>`;
+  }
+  document.getElementById('history').innerHTML = historyHTML||'Historia losowań: brak';
+  
+  document.getElementById('coins').textContent = coins;
+  document.getElementById('statsCoins').textContent = coins;
+  document.getElementById('statsRolls').textContent = totalRolls;
+
+  // aktualizacja listy szans (bez Śledziu)
+  const chanceList = document.getElementById('chanceList');
+  chanceList.innerHTML = 'Aktualne szanse:<br>';
+  images.forEach(img=>{
+    if(img.text === 'Śledziu') return; // pomijamy Śledziu
+    chanceList.innerHTML += `${img.text}: ${(img.chance*100).toFixed(2)}%<br>`;
+  });
+
+  // zapis do localStorage
+  localStorage.setItem('coins',coins);
+  localStorage.setItem('inventory',JSON.stringify(inventory));
+  localStorage.setItem('historyData',JSON.stringify(historyData));
+  localStorage.setItem('cooldown',cooldown);
+  localStorage.setItem('totalRolls',totalRolls);
+}
 
 // ===== COOLDOWN =====
 setInterval(()=>{
-    const now = Date.now();
-    let remaining = lastRoll ? Math.max(0,cooldown-(now-lastRoll)) : 0;
-    document.getElementById("cooldownDisplay").textContent = `Cooldown: ${(remaining/1000).toFixed(1)}s`;
+  const now=Date.now();
+  const diff=lastRoll?Math.max(0,cooldown-(now-lastRoll)):0;
+  document.getElementById('cooldownDisplay').textContent=`Cooldown: ${(diff/1000).toFixed(1)}s`;
 },100);
 
-// ===== LOSOWANIE =====
-function rollRNG(){
-    const now = Date.now();
-    if(now - lastRoll < cooldown) return;
-    lastRoll = now;
-    totalRolls++;
+// ===== ROLL =====
+function rollRNG(showRareAnimationOnly=false){
+  const now=Date.now();
+  if(now-lastRoll<cooldown) return;
+  lastRoll=now;
+  totalRolls++;
 
-    if(!musicStarted){
-        const music = musicList[Math.floor(Math.random()*musicList.length)];
-        bgMusic.src = music;
-        bgMusic.volume = document.getElementById("volumeControl").value/100;
-        bgMusic.play().catch(()=>{});
-        musicStarted=true;
-    }
+  const entries=[];
+images.forEach(img=>{
+  if(img.text === 'Śledziu') return; // ❌ USUWAMY ŚLEDZIA Z LOSOWANIA
+  if(img.requiresItem && !inventory.includes(img.requiresItem)) return;
 
-    // budowanie puli nagród
-    const pool = [];
-    pawly.forEach(p=>{
-        let count = Math.floor(p.chance * 1000000);
-        for(let i=0;i<count;i++) pool.push(p);
-    });
+  let count = Math.floor(img.chance * 1000000);
+  if(inventory.length > 0) count = Math.floor(count * 1.05);
+  for(let i = 0; i < count; i++) entries.push(img);
+});
 
-    const animImg = document.getElementById("resultImage");
-    const animText = document.getElementById("resultText");
-    const animChance = document.getElementById("chanceText");
-    const animRarity = document.getElementById("rarityText");
+  const imgElem=document.getElementById('resultImage');
+  const textElem=document.getElementById('resultText');
+  const chanceElem=document.getElementById('chanceText');
+  const rarityElem=document.getElementById('rarityText');
 
-    let elapsed=0;
-    const animInterval = setInterval(()=>{
-        const temp = pawly[Math.floor(Math.random()*pawly.length)];
-        animImg.src = temp.src;
-        animText.textContent = temp.text;
-        animChance.textContent = `Szansa: 1/${Math.round(1/temp.chance)}`;
-        animRarity.textContent = `Rzadkość: ${temp.rarity}`;
-        animImg.style.transform = `scale(${1+Math.random()*0.2}) rotate(${(Math.random()-0.5)*20}deg)`;
-        elapsed+=50;
-        if(elapsed>=1000){
-            clearInterval(animInterval);
-            const selected = pool[Math.floor(Math.random()*pool.length)];
-            animImg.src = selected.src;
-            animText.textContent = selected.text;
-            animChance.textContent = `Szansa: 1/${Math.round(1/selected.chance)}`;
-            animRarity.textContent = `Rzadkość: ${selected.rarity}`;
-            animImg.style.transform = "scale(1) rotate(0deg)";
-            let reward = Math.floor(selected.reward*0.5); // 50% mniej kasy
-            coins += reward;
-            historyData[selected.text] = (historyData[selected.text]||0)+1;
-            updateUI();
-        }
-    },50);
+  let elapsedAnim=0;
+  const animSpeed=50;
+  const totalDuration=1000;
+  const interval=setInterval(()=>{
+    let temp;
+    do {
+  temp = images[Math.floor(Math.random()*images.length)];
+} while (temp.text === 'Śledziu');
+
+
+    imgElem.src=temp.src;
+    textElem.textContent=temp.text;
+    chanceElem.textContent=`Szansa: 1/${Math.round(1/temp.chance)}`;
+    rarityElem.textContent=`Rzadkość: ${temp.rarity}`;
+    if(temp.rarity!=='Common' && temp.rarity!=='Uncommon'){
+      imgElem.style.transform=`scale(${1+Math.random()*0.2}) rotate(${(Math.random()-0.5)*20}deg)`;
+      imgElem.style.filter=`brightness(${1+Math.random()*0.5})`;
+    } else { imgElem.style.transform='scale(1) rotate(0deg)'; imgElem.style.filter='brightness(1)'; }
+
+    elapsedAnim+=animSpeed;
+    if(elapsedAnim>=totalDuration){
+      clearInterval(interval);
+      const selected=entries[Math.floor(Math.random()*entries.length)];
+      imgElem.src=selected.src;
+      textElem.textContent=selected.text;
+      if (selected.chance <= 0) {
+  chanceElem.textContent = 'Szansa: ???';
+} else {
+  chanceElem.textContent = `Szansa: 1/${Math.round(1 / selected.chance)}`;
 }
 
-document.getElementById("rollButton").addEventListener("click", rollRNG);
+      rarityElem.textContent=`Rzadkość: ${selected.rarity}`;
+      let reward=selected.reward;
+      if(inventory.length>0) reward=Math.floor(reward*(1+0.05*inventory.length));
+      coins+=reward;
+      if(historyData[selected.text]) historyData[selected.text]++;
+      else historyData[selected.text]=1;
+      imgElem.style.transform='scale(1) rotate(0deg)';
+      imgElem.style.filter='brightness(1)';
+      updateUI();
+    }
+  },animSpeed);
+}
+
+// ===== BUTTONS =====
+document.getElementById('rollButton').addEventListener('click', async ()=>{
+  if(!musicStarted){
+    const randomMusic = musicFiles[Math.floor(Math.random()*musicFiles.length)];
+    bgMusic.src = randomMusic;
+    try{ await bgMusic.play(); musicStarted=true;}catch(err){console.log(err);}
+  }
+  rollRNG(true);
+});
+
+document.getElementById('muteButton').addEventListener('click',()=>{ bgMusic.muted=!bgMusic.muted; });
+document.getElementById('volumeControl').addEventListener('input',(e)=>{ bgMusic.volume=e.target.value/100; });
 
 // ===== ULEPSZENIA =====
-document.getElementById("shortenCooldown").addEventListener("click",()=>{
-    if(coins>=50 && cooldown>1000){
-        coins-=50;
-        cooldown-=500;
-        updateUI();
-        alert(`Cooldown skrócony do ${(cooldown/1000).toFixed(1)}s`);
-    } else alert("Nie można lub brak monet!");
+document.getElementById('shortenCooldown').addEventListener('click',()=>{
+  if(coins>=50 && cooldown>1000){ coins-=50; cooldown=Math.max(1000,cooldown-500); updateUI(); alert(`Cooldown skrócony! Teraz ${(cooldown/1000).toFixed(1)}s`); }
+  else alert('Nie można już ulepszyć cooldowna lub brak monet!');
 });
 
-document.getElementById("increaseChances").addEventListener("click",()=>{
-    if(coins>=100){
-        coins-=100;
-        pawly.forEach(p=>{
-            p.chance = Math.min(1,p.chance*1.05);
-        });
-        updateUI();
-        alert("Szanse zwiększone!");
-    } else alert("Brak monet!");
+document.getElementById('increaseChances').addEventListener('click',()=>{
+  if(coins>=100){
+    coins-=100;
+    images.forEach(img=>{
+      if(img.text==='gejmingowy paweł' || img.text==='paweł prezydent'){
+        img.chance = Math.max(0.01, img.chance*0.95);
+      } else {
+        img.chance = Math.min(1, Math.round(img.chance*1.05*1000)/1000);
+      }
+    });
+    localStorage.setItem('imagesChances', JSON.stringify(images.map(img=>img.chance)));
+    updateUI(); 
+    alert('Szanse zostały ulepszone! Najpospolitsze Pawły mają teraz nieco mniejsze szanse.');
+  } else alert('Nie masz wystarczająco monet!');
 });
 
-document.getElementById("buyItem").addEventListener("click",()=>{
-    if(coins>=100){
-        if(!inventory.includes("Tajemniczy Przedmiot")){
-            coins-=100;
-            inventory.push("Tajemniczy Przedmiot");
-            updateUI();
-            alert("Kupiono Tajemniczy Przedmiot!");
-        } else alert("Masz już przedmiot!");
-    } else alert("Brak monet!");
+document.getElementById('buyItem').addEventListener('click',()=>{
+  if(coins>=100){
+    if(!inventory.includes('Tajemniczy Przedmiot')){ coins-=100; inventory.push('Tajemniczy Przedmiot'); updateUI(); alert('Tajemniczy Przedmiot dodany!'); }
+    else alert('Masz już Tajemniczy Przedmiot!');
+  } else alert('Nie masz wystarczająco monet!');
 });
 
-// ===== AUTOROLL =====
-document.getElementById("toggleAutoRoll").addEventListener("click",()=>{
-    if(autoRoll){
-        clearInterval(autoRollTimer);
-        autoRoll=false;
-        alert("Auto-Roll wyłączony");
-    } else {
-        if(coins>=5000){
-            coins-=5000;
-            autoRoll=true;
-            autoRollTimer=setInterval(rollRNG,1500);
-            alert("Auto-Roll włączony");
-        } else alert("Nie masz monet!");
-    }
-    updateUI();
+document.getElementById('toggleAutoRoll').addEventListener('click',()=>{
+  if(autoRollEnabled){ clearInterval(autoRollInterval); autoRollEnabled=false; updateUI(); alert('Auto-Roll wyłączony'); }
+  else { if(coins>=5000){ coins-=5000; autoRollEnabled=true; autoRollInterval=setInterval(()=>rollRNG(true),1500); updateUI(); alert('Auto-Roll włączony'); }
+  else alert('Nie masz wystarczająco monet na Auto-Roll!'); }
 });
 
 // ===== RESET =====
-const resetOverlay = document.getElementById("resetOverlay");
-document.getElementById("resetProgress").addEventListener("click",()=>{
-    resetOverlay.style.display="flex";
-});
-document.getElementById("resetNo").addEventListener("click",()=>{
-    resetOverlay.style.display="none";
-});
-document.getElementById("resetYes").addEventListener("click",()=>{
-    localStorage.clear();
-    location.reload();
-});
+const resetOverlay = document.getElementById('resetOverlay');
+const resetYes = document.getElementById('resetYes');
+const resetNo = document.getElementById('resetNo');
 
-// ===== SKLEP =====
-function openShop(){document.getElementById("shopOverlay").style.display="flex";}
-function closeShop(){document.getElementById("shopOverlay").style.display="none";}
-document.getElementById("openShop").addEventListener("click", openShop);
+document.getElementById('resetProgress').addEventListener('click',()=>{ resetOverlay.style.display='flex'; });
+resetNo.addEventListener('click',()=>{ resetOverlay.style.display='none'; });
+resetYes.addEventListener('click',()=>{ localStorage.clear(); location.reload(); });
 
-function buyShopItem(type){
-    switch(type){
-        case "lucky":
-            alert("Kupiono Lucky Paweł (1.5x) – zwiększenie szans");
-            break;
-        case "mega":
-            alert("Kupiono Mega Paweł (2x)");
-            break;
-        case "ultimate":
-            alert("Kupiono Ultimate Paweł (3x)");
-            break;
-    }
-}
-
-// ===== AUTO UPDATE UI =====
+// ===== ODŚWIEŻANIE UI =====
 setInterval(updateUI,500);
+
+// ===== ZAPIS PLAY TIME CO 5s =====
+setInterval(()=>{
+  const elapsed = Math.floor((Date.now()-playTimeStart)/1000);
+  playTime+=elapsed;
+  playTimeStart=Date.now();
+  localStorage.setItem('playTime',playTime);
+},5000);
 
 </script>
 </body>
