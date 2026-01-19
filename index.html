@@ -51,6 +51,35 @@ button:active { transform: scale(0.9); }
 .shopItem .owned { color:#4CAF50; font-weight:bold; }
 #closeShop { background-color:#f44336; color:white; padding:10px 20px; border:none; border-radius:5px; cursor:pointer; margin-top:20px; }
 
+#questsButton { background-color:#9C27B0; color:white; margin-top:10px; }
+#questsOverlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); z-index:1000; justify-content:center; align-items:center; }
+#questsBox { background:#222; padding:30px; border-radius:15px; max-width:600px; max-height:80vh; overflow-y:auto; border:2px solid #9C27B0; }
+#questsBox h2 { color:#9C27B0; margin-top:0; }
+.questItem { background:#333; padding:15px; margin:10px 0; border-radius:10px; border:1px solid #555; position:relative; }
+.questItem.completed { border-color:#4CAF50; opacity:0.7; }
+.questItem h3 { color:#9C27B0; margin:5px 0; }
+.questItem.completed h3 { color:#4CAF50; }
+.questItem p { margin:5px 0; font-size:0.9em; }
+.questItem .progress { background:#555; height:20px; border-radius:10px; margin:10px 0; overflow:hidden; }
+.questItem .progressBar { background:#9C27B0; height:100%; transition:width 0.3s; }
+.questItem.completed .progressBar { background:#4CAF50; }
+.questItem .reward { color:#FFD700; font-weight:bold; }
+.questItem .checkmark { position:absolute; top:10px; right:10px; color:#4CAF50; font-size:1.5em; }
+#closeQuests { background-color:#f44336; color:white; padding:10px 20px; border:none; border-radius:5px; cursor:pointer; margin-top:20px; }
+
+#codesButton { background-color:#673AB7; color:white; margin-top:10px; }
+#codesOverlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.75); z-index:1000; justify-content:center; align-items:center; }
+#codesBox { background:#222; padding:30px; border-radius:15px; max-width:500px; border:2px solid #673AB7; text-align:center; }
+#codesBox h2 { color:#673AB7; margin-top:0; }
+#codeInput { width:100%; padding:15px; font-size:1.2em; border:2px solid #673AB7; border-radius:10px; background:#333; color:white; margin:20px 0; text-align:center; text-transform:uppercase; box-sizing:border-box; }
+#codeInput::placeholder { color:#888; }
+#submitCode { background-color:#673AB7; color:white; padding:15px 30px; border:none; border-radius:10px; cursor:pointer; font-size:1.1em; margin:10px; }
+#submitCode:hover { background-color:#5E35B1; }
+#closeCodes { background-color:#f44336; color:white; padding:15px 30px; border:none; border-radius:10px; cursor:pointer; font-size:1.1em; margin:10px; }
+.codeHistory { margin-top:20px; padding:15px; background:#333; border-radius:10px; max-height:200px; overflow-y:auto; }
+.codeHistory h3 { color:#673AB7; margin-top:0; }
+.codeHistoryItem { padding:8px; margin:5px 0; background:#444; border-radius:5px; border-left:3px solid #4CAF50; }
+
 /* Custom Popup */
 .custom-popup { 
   position: fixed; 
@@ -100,6 +129,8 @@ button:active { transform: scale(0.9); }
 <div id="currency">Monety: <span id="coins">0</span></div>
 
 <button id="shopButton">🛒 SKLEP</button>
+<button id="questsButton">📋 QUESTY</button>
+<button id="codesButton">🎁 KODY</button>
 
 <div id="upgrades">
   <button class="upgradeButton" id="shortenCooldown">Skróć cooldown (-0.5s) 50 monet</button>
@@ -170,6 +201,32 @@ button:active { transform: scale(0.9); }
   </div>
 </div>
 
+<!-- Quests overlay -->
+<div id="questsOverlay">
+  <div id="questsBox">
+    <h2>📋 QUESTY</h2>
+    <p style="color:#ccc;">Wykonuj questy aby zdobyć dodatkowe nagrody!</p>
+    <div id="questsList"></div>
+    <button id="closeQuests">Zamknij questy</button>
+  </div>
+</div>
+
+<!-- Codes overlay -->
+<div id="codesOverlay">
+  <div id="codesBox">
+    <h2>🎁 KODY PROMOCYJNE</h2>
+    <p style="color:#ccc;">Wpisz kod aby otrzymać ekskluzywne nagrody!</p>
+    <input type="text" id="codeInput" placeholder="WPISZ KOD TUTAJ" maxlength="50">
+    <br>
+    <button id="submitCode">Aktywuj Kod</button>
+    <button id="closeCodes">Zamknij</button>
+    <div class="codeHistory">
+      <h3>Użyte kody:</h3>
+      <div id="usedCodesList">Brak użytych kodów</div>
+    </div>
+  </div>
+</div>
+
 <div id="chanceList"></div>
 
 <audio id="backgroundMusic"></audio>
@@ -233,6 +290,33 @@ let playTimeStart = localStorage.getItem('playTimeStart') !== null ? parseInt(lo
 let luckMultiplier = localStorage.getItem('luckMultiplier') !== null ? parseFloat(localStorage.getItem('luckMultiplier')) : 1;
 let ownedShopItems = localStorage.getItem('ownedShopItems') ? JSON.parse(localStorage.getItem('ownedShopItems')) : [];
 
+// Questy
+let quests = localStorage.getItem('quests') ? JSON.parse(localStorage.getItem('quests')) : [
+  {id:1, name:'Początkujący Rollujący', desc:'Wykonaj 10 losowań', target:10, current:0, reward:50, type:'rolls', completed:false},
+  {id:2, name:'Zbieracz Monet', desc:'Zgromadź 500 monet', target:500, current:0, reward:100, type:'coins', completed:false},
+  {id:3, name:'Wspinaczka po Drabinie', desc:'Wylosuj 5 różnych Pawełków', target:5, current:0, reward:150, type:'unique', completed:false},
+  {id:4, name:'Rollercoaster', desc:'Wykonaj 50 losowań', target:50, current:0, reward:200, type:'rolls', completed:false},
+  {id:5, name:'Kolekcjoner Uncommon', desc:'Wylosuj 10x paweł prezydent', target:10, current:0, reward:250, type:'item:paweł prezydent', completed:false},
+  {id:6, name:'Maraton Rollowania', desc:'Wykonaj 100 losowań', target:100, current:0, reward:500, type:'rolls', completed:false},
+  {id:7, name:'Bogacz', desc:'Zgromadź 2000 monet', target:2000, current:0, reward:750, type:'coins', completed:false},
+  {id:8, name:'Mistrz Rare', desc:'Wylosuj 5x pawel w zoltym hoodie', target:5, current:0, reward:400, type:'item:pawel w zoltym hoodie', completed:false},
+  {id:9, name:'Epic Hunter', desc:'Wylosuj 3x funni paweł', target:3, current:0, reward:600, type:'item:funni paweł', completed:false},
+  {id:10, name:'Legenda', desc:'Wykonaj 250 losowań', target:250, current:0, reward:1000, type:'rolls', completed:false},
+  {id:11, name:'Mythic Seeker', desc:'Wylosuj 2x paweł ok', target:2, current:0, reward:800, type:'item:paweł ok', completed:false},
+  {id:12, name:'Świąteczny Duch', desc:'Wylosuj 1x świąteczny paweł', target:1, current:0, reward:1200, type:'item:świąteczny paweł', completed:false},
+  {id:13, name:'Ultra Gracz', desc:'Wykonaj 500 losowań', target:500, current:0, reward:2000, type:'rolls', completed:false},
+  {id:14, name:'Magnat', desc:'Zgromadź 10000 monet', target:10000, current:0, reward:3000, type:'coins', completed:false},
+  {id:15, name:'Mistrz RNG', desc:'Wylosuj wszystkie 9 Pawełków', target:9, current:0, reward:5000, type:'unique', completed:false}
+];
+
+// Kody promocyjne
+let usedCodes = localStorage.getItem('usedCodes') ? JSON.parse(localStorage.getItem('usedCodes')) : [];
+const promoCodes = {
+  'SLEDZIUFEMBOY': 1000,
+  'PAWEL': 100,
+  'SUPERCALIFRAGILISTICEXPIALIDOCIOUS': 1500
+};
+
 // ===== CUSTOM POPUP =====
 function showPopup(message, type = 'success') {
   const popup = document.createElement('div');
@@ -250,6 +334,57 @@ function showPopup(message, type = 'success') {
 }
 
 // ===== FUNKCJE =====
+function updateQuests() {
+  // Aktualizuj postęp questów
+  quests.forEach(q => {
+    if(q.completed) return;
+    
+    if(q.type === 'rolls') {
+      q.current = totalRolls;
+    } else if(q.type === 'coins') {
+      q.current = coins;
+    } else if(q.type === 'unique') {
+      q.current = Object.keys(historyData).length;
+    } else if(q.type.startsWith('item:')) {
+      const itemName = q.type.split(':')[1];
+      q.current = historyData[itemName] || 0;
+    }
+    
+    if(q.current >= q.target && !q.completed) {
+      q.completed = true;
+      coins += q.reward;
+      showPopup(`✨ Quest ukończony: ${q.name}! +${q.reward} monet`, 'success');
+    }
+  });
+  
+  localStorage.setItem('quests', JSON.stringify(quests));
+}
+
+function updateQuestsUI() {
+  const questsList = document.getElementById('questsList');
+  questsList.innerHTML = '';
+  
+  quests.forEach(q => {
+    const questDiv = document.createElement('div');
+    questDiv.className = `questItem${q.completed ? ' completed' : ''}`;
+    
+    const progress = Math.min(100, (q.current / q.target) * 100);
+    
+    questDiv.innerHTML = `
+      ${q.completed ? '<span class="checkmark">✓</span>' : ''}
+      <h3>${q.name}</h3>
+      <p>${q.desc}</p>
+      <div class="progress">
+        <div class="progressBar" style="width:${progress}%"></div>
+      </div>
+      <p>Postęp: ${q.current}/${q.target}</p>
+      <p class="reward">Nagroda: ${q.reward} monet</p>
+    `;
+    
+    questsList.appendChild(questDiv);
+  });
+}
+
 function updateUI(){
   document.getElementById('statsPlayTime').textContent = playTime+'s';
   document.getElementById('inventory').textContent = inventory.length?`Ekwipunek: ${inventory.join(', ')}`:'Ekwipunek: brak';
@@ -272,6 +407,9 @@ function updateUI(){
     if(img.text === 'Śledziu') return;
     chanceList.innerHTML += `${img.text}: ${(img.chance*100).toFixed(2)}%<br>`;
   });
+
+  // Aktualizuj questy
+  updateQuests();
 
   // zapis do localStorage
   localStorage.setItem('coins',coins);
