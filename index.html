@@ -221,7 +221,7 @@ let totalRolls = localStorage.getItem('totalRolls') !== null ? parseInt(localSto
 let autoRollEnabled = localStorage.getItem('autoRollEnabled') !== null ? JSON.parse(localStorage.getItem('autoRollEnabled')) : false;
 let autoRollInterval = null;
 let playTime = localStorage.getItem('playTime') !== null ? parseInt(localStorage.getItem('playTime')) : 0;
-let playTimeStart = Date.now();
+let playTimeStart = localStorage.getItem('playTimeStart') !== null ? parseInt(localStorage.getItem('playTimeStart')) : Date.now();
 
 // Mnożniki szczęścia ze sklepu
 let luckMultiplier = localStorage.getItem('luckMultiplier') !== null ? parseFloat(localStorage.getItem('luckMultiplier')) : 1;
@@ -597,11 +597,13 @@ document.getElementById('buyUltimatePawel').addEventListener('click', () => {
 
 // ===== AUTO-SAVE =====
 setInterval(()=>{
-  playTime += 10;
+  const elapsed = Math.floor((Date.now() - playTimeStart) / 1000);
+  playTime += elapsed;
+  playTimeStart = Date.now();
   localStorage.setItem('playTime', playTime);
+  localStorage.setItem('playTimeStart', playTimeStart);
   localStorage.setItem('autoRollEnabled', autoRollEnabled);
-}, 10000);
-
+}, 1000);
 // ===== INIT =====
 updateUI();
 
