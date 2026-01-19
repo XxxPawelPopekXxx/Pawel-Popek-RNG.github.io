@@ -185,7 +185,7 @@ const images = [
   {src:'photo6.png',text:'świąteczny paweł',chance:1/64,rarity:'Legendary',reward:80},
   {src:'photo7.png',text:'paweł dostaje backshoty',chance:1/128,rarity:'Ultra Legendary',reward:160},
   {src:'photo8.png',text:'paweł komunista',chance:1/256,rarity:'Ultra Legendary',reward:320},
-  {src:'photo9.png',text:'Śledziu',chance:0,rarity:'Secret',reward:500,requiresItem:'Tajemniczy Przedmiot'}
+  {src:'photo9.png',text:'Śledziu',chance:1/100000000,rarity:'Secret',reward:10000,requiresItem:'Tajemniczy Przedmiot'}
 ];
 
 // ===== WCZYTYWANIE SZANS Z LOCALSTORAGE =====
@@ -289,14 +289,15 @@ function rollRNG(showRareAnimationOnly=false){
   lastRoll=now;
   totalRolls++;
 
-  // Oblicz szansę na Śledzia co 500 rolli
-  const sledzMilestone = Math.floor(totalRolls / 500);
-  const sledzChance = sledzMilestone > 0 ? 1/100 : 0;
-  
-  // Aktualizuj szansę Śledzia w tablicy images
+  // Oblicz szansę na Śledzia - co 500 rolli daje boost do 1/100
   const sledzImage = images.find(img => img.text === 'Śledziu');
   if(sledzImage) {
-    sledzImage.chance = sledzChance;
+    // Jeśli liczba rolli jest wielokrotnością 500 (500, 1000, 1500...), szansa to 1/100
+    if(totalRolls % 500 === 0 && totalRolls > 0) {
+      sledzImage.chance = 1/100;
+    } else {
+      sledzImage.chance = 1/100000000; // Normalna ultra-rzadka szansa
+    }
   }
 
   const entries=[];
@@ -324,7 +325,9 @@ function rollRNG(showRareAnimationOnly=false){
   const animSpeed=50;
   const totalDuration=1000;
   const interval=setInterval(()=>{
-    const temp = images[Math.floor(Math.random()*images.length)];
+    // Wyklucz Śledzia z animacji
+    const tempImages = images.filter(img => img.text !== 'Śledziu');
+    const temp = tempImages[Math.floor(Math.random()*tempImages.length)];
 
     imgElem.src=temp.src;
     textElem.textContent=temp.text;
@@ -337,7 +340,10 @@ function rollRNG(showRareAnimationOnly=false){
     if(temp.rarity!=='Common' && temp.rarity!=='Uncommon'){
       imgElem.style.transform=`scale(${1+Math.random()*0.2}) rotate(${(Math.random()-0.5)*20}deg)`;
       imgElem.style.filter=`brightness(${1+Math.random()*0.5})`;
-    } else { imgElem.style.transform='scale(1) rotate(0deg)'; imgElem.style.filter='brightness(1)'; }
+    } else { 
+      imgElem.style.transform='scale(1) rotate(0deg)'; 
+      imgElem.style.filter='brightness(1)'; 
+    }
 
     elapsedAnim+=animSpeed;
     if(elapsedAnim>=totalDuration){
