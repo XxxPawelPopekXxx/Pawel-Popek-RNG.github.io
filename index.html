@@ -50,6 +50,28 @@ button:active { transform: scale(0.9); }
 .shopItem button:disabled { background-color:#666; cursor:not-allowed; }
 .shopItem .owned { color:#4CAF50; font-weight:bold; }
 #closeShop { background-color:#f44336; color:white; padding:10px 20px; border:none; border-radius:5px; cursor:pointer; margin-top:20px; }
+
+/* Custom Popup */
+.custom-popup { 
+  position: fixed; 
+  top: 50%; 
+  left: 50%; 
+  transform: translate(-50%, -50%); 
+  background: #222; 
+  border: 2px solid #4CAF50; 
+  border-radius: 15px; 
+  padding: 30px 40px; 
+  font-size: 1.3em; 
+  z-index: 2000; 
+  opacity: 1;
+  transition: opacity 0.5s ease;
+  box-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+  text-align: center;
+  min-width: 300px;
+}
+.custom-popup.error { border-color: #f44336; box-shadow: 0 0 20px rgba(244, 67, 54, 0.5); }
+.custom-popup.success { border-color: #4CAF50; box-shadow: 0 0 20px rgba(76, 175, 80, 0.5); }
+.custom-popup.fadeout { opacity: 0; }
 </style>
 </head>
 <body>
@@ -61,6 +83,7 @@ button:active { transform: scale(0.9); }
   <div>Autorzy: KoleszkaPP i its4iko</div>
   <div>Play Time: <span id="statsPlayTime">0s</span></div>
   <div>Łączne losowania: <span id="statsRolls">0</span></div>
+  <div>Mnożnik szczęścia: <span id="statsLuck">1.00x</span></div>
 </div>
 
 <img id="resultImage" src="photo.png" alt="Result">
@@ -162,7 +185,7 @@ const images = [
   {src:'photo6.png',text:'świąteczny paweł',chance:1/64,rarity:'Legendary',reward:80},
   {src:'photo7.png',text:'paweł dostaje backshoty',chance:1/128,rarity:'Ultra Legendary',reward:160},
   {src:'photo8.png',text:'paweł komunista',chance:1/256,rarity:'Ultra Legendary',reward:320},
-  {src:'photo9.png',text:'Śledziu',chance:1/1e15,rarity:'Secret',reward:500,requiresItem:'Tajemniczy Przedmiot'}
+  {src:'photo9.png',text:'Śledziu',chance:0,rarity:'Secret',reward:500,requiresItem:'Tajemniczy Przedmiot'}
 ];
 
 // ===== WCZYTYWANIE SZANS Z LOCALSTORAGE =====
@@ -170,13 +193,23 @@ const savedChances = localStorage.getItem('imagesChances');
 if(savedChances){
   const chancesArr = JSON.parse(savedChances);
   images.forEach((img,i)=>{
-    img.chance = chancesArr[i];
+    if(img.text !== 'Śledziu') {
+      img.chance = chancesArr[i];
+    }
   });
 }
 
 const musicFiles = ['music.mp3','music2.mp3','music3.mp3','music4.mp3','music5.mp3'];
 const bgMusic = document.getElementById('backgroundMusic');
 let musicStarted = false;
+let currentMusicIndex = 0;
+
+// Obsługa zakończenia utworu - automatyczne przełączanie
+bgMusic.addEventListener('ended', () => {
+  currentMusicIndex = (currentMusicIndex + 1) % musicFiles.length;
+  bgMusic.src = musicFiles[currentMusicIndex];
+  bgMusic.play().catch(err => console.log(err));
+});
 
 // ===== ZMIENNE =====
 let coins = localStorage.getItem('coins') !== null ? parseInt(localStorage.getItem('coins')) : 30;
@@ -194,6 +227,22 @@ let playTimeStart = Date.now();
 let luckMultiplier = localStorage.getItem('luckMultiplier') !== null ? parseFloat(localStorage.getItem('luckMultiplier')) : 1;
 let ownedShopItems = localStorage.getItem('ownedShopItems') ? JSON.parse(localStorage.getItem('ownedShopItems')) : [];
 
+// ===== CUSTOM POPUP =====
+function showPopup(message, type = 'success') {
+  const popup = document.createElement('div');
+  popup.className = `custom-popup ${type}`;
+  popup.textContent = message;
+  document.body.appendChild(popup);
+  
+  setTimeout(() => {
+    popup.classList.add('fadeout');
+  }, 2000);
+  
+  setTimeout(() => {
+    document.body.removeChild(popup);
+  }, 2500);
+}
+
 // ===== FUNKCJE =====
 function updateUI(){
   const elapsed = Math.floor((Date.now()-playTimeStart)/1000);
@@ -209,12 +258,13 @@ function updateUI(){
   document.getElementById('coins').textContent = coins;
   document.getElementById('statsCoins').textContent = coins;
   document.getElementById('statsRolls').textContent = totalRolls;
+  document.getElementById('statsLuck').textContent = luckMultiplier.toFixed(2) + 'x';
 
   // aktualizacja listy szans (bez Śledziu)
   const chanceList = document.getElementById('chanceList');
   chanceList.innerHTML = 'Aktualne szanse:<br>';
   images.forEach(img=>{
-    if(img.text === 'Śledziu') return; // pomijamy Śledziu
+    if(img.text === 'Śledziu') return;
     chanceList.innerHTML += `${img.text}: ${(img.chance*100).toFixed(2)}%<br>`;
   });
 
@@ -240,13 +290,29 @@ function rollRNG(showRareAnimationOnly=false){
   lastRoll=now;
   totalRolls++;
 
+  // Oblicz szansę na Śledzia co 500 rolli
+  const sledzMilestone = Math.floor(totalRolls / 500);
+  const sledzChance = sledzMilestone > 0 ? 1/100 : 0;
+  
+  // Aktualizuj szansę Śledzia w tablicy images
+  const sledzImage = images.find(img => img.text === 'Śledziu');
+  if(sledzImage) {
+    sledzImage.chance = sledzChance;
+  }
+
   const entries=[];
   images.forEach(img=>{
-    if(img.text === 'Śledziu') return; // ❌ USUWAMY ŚLEDZIA Z LOSOWANIA
     if(img.requiresItem && !inventory.includes(img.requiresItem)) return;
 
-    let count = Math.floor(img.chance * 1000000 * luckMultiplier); // Dodano luckMultiplier
-    if(inventory.length > 0) count = Math.floor(count * 1.05);
+    let count;
+    if(img.text === 'Śledziu') {
+      // Śledź nie jest modyfikowany przez luck multiplier
+      count = Math.floor(img.chance * 1000000);
+    } else {
+      count = Math.floor(img.chance * 1000000 * luckMultiplier);
+      if(inventory.length > 0) count = Math.floor(count * 1.05);
+    }
+    
     for(let i = 0; i < count; i++) entries.push(img);
   });
 
@@ -259,14 +325,15 @@ function rollRNG(showRareAnimationOnly=false){
   const animSpeed=50;
   const totalDuration=1000;
   const interval=setInterval(()=>{
-    let temp;
-    do {
-      temp = images[Math.floor(Math.random()*images.length)];
-    } while (temp.text === 'Śledziu');
+    const temp = images[Math.floor(Math.random()*images.length)];
 
     imgElem.src=temp.src;
     textElem.textContent=temp.text;
-    chanceElem.textContent=`Szansa: 1/${Math.round(1/temp.chance)}`;
+    if(temp.chance > 0) {
+      chanceElem.textContent=`Szansa: 1/${Math.round(1/temp.chance)}`;
+    } else {
+      chanceElem.textContent='Szansa: ???';
+    }
     rarityElem.textContent=`Rzadkość: ${temp.rarity}`;
     if(temp.rarity!=='Common' && temp.rarity!=='Uncommon'){
       imgElem.style.transform=`scale(${1+Math.random()*0.2}) rotate(${(Math.random()-0.5)*20}deg)`;
@@ -279,7 +346,7 @@ function rollRNG(showRareAnimationOnly=false){
       const selected=entries[Math.floor(Math.random()*entries.length)];
       imgElem.src=selected.src;
       textElem.textContent=selected.text;
-      if (selected.chance <= 0) {
+      if (selected.chance <= 0 || selected.chance > 1) {
         chanceElem.textContent = 'Szansa: ???';
       } else {
         chanceElem.textContent = `Szansa: 1/${Math.round(1 / selected.chance)}`;
@@ -293,6 +360,12 @@ function rollRNG(showRareAnimationOnly=false){
       else historyData[selected.text]=1;
       imgElem.style.transform='scale(1) rotate(0deg)';
       imgElem.style.filter='brightness(1)';
+      
+      // Popup dla Śledzia
+      if(selected.text === 'Śledziu') {
+        showPopup('🐟 WYLOSOWAŁEŚ ŚLEDZIA! 🐟', 'success');
+      }
+      
       updateUI();
     }
   },animSpeed);
@@ -301,8 +374,8 @@ function rollRNG(showRareAnimationOnly=false){
 // ===== BUTTONS =====
 document.getElementById('rollButton').addEventListener('click', async ()=>{
   if(!musicStarted){
-    const randomMusic = musicFiles[Math.floor(Math.random()*musicFiles.length)];
-    bgMusic.src = randomMusic;
+    currentMusicIndex = Math.floor(Math.random()*musicFiles.length);
+    bgMusic.src = musicFiles[currentMusicIndex];
     try{ await bgMusic.play(); musicStarted=true;}catch(err){console.log(err);}
   }
   rollRNG(true);
@@ -313,14 +386,23 @@ document.getElementById('volumeControl').addEventListener('input',(e)=>{ bgMusic
 
 // ===== ULEPSZENIA =====
 document.getElementById('shortenCooldown').addEventListener('click',()=>{
-  if(coins>=50 && cooldown>1000){ coins-=50; cooldown=Math.max(1000,cooldown-500); updateUI(); alert(`Cooldown skrócony! Teraz ${(cooldown/1000).toFixed(1)}s`); }
-  else alert('Nie można już ulepszyć cooldowna lub brak monet!');
+  if(coins>=50 && cooldown>1000){ 
+    coins-=50; 
+    cooldown=Math.max(1000,cooldown-500); 
+    updateUI(); 
+    showPopup(`Cooldown skrócony! Teraz ${(cooldown/1000).toFixed(1)}s`, 'success');
+  } else if(cooldown <= 1000) {
+    showPopup('Nie można już ulepszyć cooldowna!', 'error');
+  } else {
+    showPopup('Nie masz wystarczająco monet!', 'error');
+  }
 });
 
 document.getElementById('increaseChances').addEventListener('click',()=>{
   if(coins>=100){
     coins-=100;
     images.forEach(img=>{
+      if(img.text === 'Śledziu') return; // Nie modyfikujemy szansy Śledzia
       if(img.text==='gejmingowy paweł' || img.text==='paweł prezydent'){
         img.chance = Math.max(0.01, img.chance*0.95);
       } else {
@@ -329,21 +411,44 @@ document.getElementById('increaseChances').addEventListener('click',()=>{
     });
     localStorage.setItem('imagesChances', JSON.stringify(images.map(img=>img.chance)));
     updateUI(); 
-    alert('Szanse zostały ulepszone! Najpospolitsze Pawły mają teraz nieco mniejsze szanse.');
-  } else alert('Nie masz wystarczająco monet!');
+    showPopup('Szanse zostały ulepszone!', 'success');
+  } else {
+    showPopup('Nie masz wystarczająco monet!', 'error');
+  }
 });
 
 document.getElementById('buyItem').addEventListener('click',()=>{
   if(coins>=100){
-    if(!inventory.includes('Tajemniczy Przedmiot')){ coins-=100; inventory.push('Tajemniczy Przedmiot'); updateUI(); alert('Tajemniczy Przedmiot dodany!'); }
-    else alert('Masz już Tajemniczy Przedmiot!');
-  } else alert('Nie masz wystarczająco monet!');
+    if(!inventory.includes('Tajemniczy Przedmiot')){ 
+      coins-=100; 
+      inventory.push('Tajemniczy Przedmiot'); 
+      updateUI(); 
+      showPopup('Tajemniczy Przedmiot dodany!', 'success');
+    } else {
+      showPopup('Masz już Tajemniczy Przedmiot!', 'error');
+    }
+  } else {
+    showPopup('Nie masz wystarczająco monet!', 'error');
+  }
 });
 
 document.getElementById('toggleAutoRoll').addEventListener('click',()=>{
-  if(autoRollEnabled){ clearInterval(autoRollInterval); autoRollEnabled=false; updateUI(); alert('Auto-Roll wyłączony'); }
-  else { if(coins>=5000){ coins-=5000; autoRollEnabled=true; autoRollInterval=setInterval(()=>rollRNG(true),1500); updateUI(); alert('Auto-Roll włączony'); }
-  else alert('Nie masz wystarczająco monet na Auto-Roll!'); }
+  if(autoRollEnabled){ 
+    clearInterval(autoRollInterval); 
+    autoRollEnabled=false; 
+    updateUI(); 
+    showPopup('Auto-Roll wyłączony', 'success');
+  } else { 
+    if(coins>=5000){ 
+      coins-=5000; 
+      autoRollEnabled=true; 
+      autoRollInterval=setInterval(()=>rollRNG(true),1500); 
+      updateUI(); 
+      showPopup('Auto-Roll włączony', 'success');
+    } else {
+      showPopup('Nie masz wystarczająco monet na Auto-Roll!', 'error');
+    }
+  }
 });
 
 // ===== RESET =====
@@ -436,7 +541,9 @@ document.getElementById('buyLuckyPawel').addEventListener('click', () => {
     
     updateUI();
     updateShopUI();
-    alert('🍀 Lucky Pawel zakupiony! Mnożnik szczęścia: ' + luckMultiplier.toFixed(2) + 'x');
+    showPopup('🍀 Lucky Pawel zakupiony! Mnożnik: ' + luckMultiplier.toFixed(2) + 'x', 'success');
+  } else {
+    showPopup('Brak wymaganych zasobów!', 'error');
   }
 });
 
@@ -456,7 +563,9 @@ document.getElementById('buyMegaPawel').addEventListener('click', () => {
     
     updateUI();
     updateShopUI();
-    alert('💎 Mega Pawel zakupiony! Mnożnik szczęścia: ' + luckMultiplier.toFixed(2) + 'x');
+    showPopup('💎 Mega Pawel zakupiony! Mnożnik: ' + luckMultiplier.toFixed(2) + 'x', 'success');
+  } else {
+    showPopup('Brak wymaganych zasobów!', 'error');
   }
 });
 
@@ -480,21 +589,29 @@ document.getElementById('buyUltimatePawel').addEventListener('click', () => {
     
     updateUI();
     updateShopUI();
-    alert('👑 Ultimate Pawel zakupiony! Mnożnik szczęścia: ' + luckMultiplier.toFixed(2) + 'x');
+    showPopup('👑 Ultimate Pawel zakupiony! Mnożnik: ' + luckMultiplier.toFixed(2) + 'x', 'success');
+  } else {
+    showPopup('Brak wymaganych zasobów!', 'error');
   }
 });
 
-// ===== ODŚWIEŻANIE UI =====
-setInterval(updateUI,500);
-
-// ===== ZAPIS PLAY TIME CO 5s =====
+// ===== AUTO-SAVE =====
 setInterval(()=>{
-  const elapsed = Math.floor((Date.now()-playTimeStart)/1000);
-  playTime+=elapsed;
-  playTimeStart=Date.now();
-  localStorage.setItem('playTime',playTime);
-},5000);
+  playTime += 10;
+  localStorage.setItem('playTime', playTime);
+  localStorage.setItem('autoRollEnabled', autoRollEnabled);
+}, 10000);
 
+// ===== INIT =====
+updateUI();
+
+// Przywróć auto-roll jeśli było włączone
+if(autoRollEnabled) {
+  autoRollInterval = setInterval(() => rollRNG(true), 1500);
+}
+
+// Inicjalizacja głośności
+bgMusic.volume = document.getElementById('volumeControl').value / 100;
 </script>
 </body>
 </html>
