@@ -1303,6 +1303,8 @@ const devsTab = document.getElementById('devsTab');
 const statsSection = document.getElementById('statsSection');
 const devsSection = document.getElementById('devsSection');
 
+let menuStatsInterval = null;
+
 menuButton.addEventListener('click', () => {
   updateMenuStats();
   menuOverlay.style.display = 'flex';
@@ -1312,11 +1314,22 @@ menuButton.addEventListener('click', () => {
   devsTab.classList.remove('active');
   statsSection.classList.add('active');
   devsSection.classList.remove('active');
+  
+  // Start auto-updating stats every second
+  menuStatsInterval = setInterval(() => {
+    updateMenuStats();
+  }, 1000);
 });
 
 closeMenu.addEventListener('click', () => {
   menuOverlay.style.display = 'none';
   showMenuButton();
+  
+  // Stop auto-updating when menu closes
+  if(menuStatsInterval) {
+    clearInterval(menuStatsInterval);
+    menuStatsInterval = null;
+  }
 });
 
 statsTab.addEventListener('click', () => {
