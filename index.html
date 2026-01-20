@@ -30,6 +30,9 @@ button:active { transform: scale(0.9); }
 
 #rollButton { background-color:#4CAF50; color:white; }
 #muteButton { background-color:#f44336; color:white; }
+.musicControlButton { background-color:#555; color:white; padding:15px 20px; font-size:1.3em; border:none; border-radius:10px; cursor:pointer; margin:5px; transition:background-color 0.3s; vertical-align: middle; height: 54px; display: inline-flex; align-items: center; justify-content: center; }
+.musicControlButton:hover { background-color:#666; }
+#muteButton { vertical-align: middle; }
 .upgradeButton { background-color:#2196F3; color:white; }
 #toggleAutoRoll.disabled { background-color:#f44336; }
 #toggleAutoRoll.enabled { background-color:#4CAF50; }
@@ -311,7 +314,9 @@ button:active { transform: scale(0.9); }
 
 <input type="range" min="0" max="100" value="100" id="volumeControl"> Głośność
 <br>
+<button class="musicControlButton" id="prevSong">⏮</button>
 <button id="muteButton">Mute/Unmute</button>
+<button class="musicControlButton" id="nextSong">⏭</button>
 
 <div id="currency">Monety: <span id="coins">0</span></div>
 
@@ -823,6 +828,24 @@ document.getElementById('rollButton').addEventListener('click', async ()=>{
 
 document.getElementById('muteButton').addEventListener('click',()=>{ bgMusic.muted=!bgMusic.muted; });
 document.getElementById('volumeControl').addEventListener('input',(e)=>{ bgMusic.volume=e.target.value/100; });
+
+// Poprzednia piosenka
+document.getElementById('prevSong').addEventListener('click', () => {
+  currentMusicIndex = (currentMusicIndex - 1 + musicFiles.length) % musicFiles.length;
+  bgMusic.src = musicFiles[currentMusicIndex];
+  if(musicStarted) {
+    bgMusic.play().catch(err => {});
+  }
+});
+
+// Następna piosenka
+document.getElementById('nextSong').addEventListener('click', () => {
+  currentMusicIndex = (currentMusicIndex + 1) % musicFiles.length;
+  bgMusic.src = musicFiles[currentMusicIndex];
+  if(musicStarted) {
+    bgMusic.play().catch(err => {});
+  }
+});
 
 // ===== ULEPSZENIA =====
 document.getElementById('shortenCooldown').addEventListener('click',()=>{
