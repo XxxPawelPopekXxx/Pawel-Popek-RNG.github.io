@@ -505,10 +505,84 @@ button:active { transform: scale(0.9); }
     <button id="closeItemDetail">Zamknij</button>
   </div>
 </div>
+<div id="authOverlay" style="
+  position:fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  background:rgba(0,0,0,0.9);
+  z-index:5000;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+">
+  <div style="background:#222;padding:30px;border-radius:15px;width:350px;">
+    <h2 style="color:#4CAF50">🔐 Logowanie</h2>
 
+    <input id="authLogin" placeholder="Email lub nazwa użytkownika"
+      style="width:100%;padding:12px;margin:8px 0;border-radius:8px;border:none;background:#333;color:white">
+
+    <input id="authPassword" type="password" placeholder="Hasło"
+      style="width:100%;padding:12px;margin:8px 0;border-radius:8px;border:none;background:#333;color:white">
+
+    <input id="authUsername" placeholder="Nazwa użytkownika (rejestracja)"
+      style="width:100%;padding:12px;margin:8px 0;border-radius:8px;border:none;background:#333;color:white">
+
+    <button id="loginBtn" style="width:100%;margin-top:10px">Zaloguj</button>
+    <button id="registerBtn" style="width:100%;margin-top:10px">Zarejestruj</button>
+
+    <hr style="margin:15px 0">
+
+    <button id="googleBtn" style="width:100%;background:#4285F4;color:white">
+      Zaloguj Google
+    </button>
+  </div>
+</div>
 <audio id="backgroundMusic"></audio>
 
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCvz-M4PQHIHylsyLby5GgNOHX0H04Q8hw",
+  authDomain: "pawel-rng.firebaseapp.com",
+  projectId: "pawel-rng"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+/* 🔗 UDOSTĘPNIAMY FIREBASE DLA ZWYKŁEGO JS */
+window.auth = auth;
+window.db = db;
+window.onAuthStateChanged = onAuthStateChanged;
+window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+window.GoogleAuthProvider = GoogleAuthProvider;
+window.signInWithPopup = signInWithPopup;
+window.doc = doc;
+window.getDoc = getDoc;
+window.setDoc = setDoc;
+</script>
+
+
 <script>
+
 // ===== DANE =====
 const images = [
   {src:'photo.png',text:'gejmingowy paweł',chance:1/2,rarity:'Common',reward:1},
@@ -1441,6 +1515,100 @@ if(autoRollEnabled) {
 
 // Inicjalizacja głośności
 bgMusic.volume = document.getElementById('volumeControl').value / 100;
+// ===== FIREBASE AUTH =====
+const authOverlay = document.getElementById('authOverlay');
+const authLogin = document.getElementById('authLogin');
+const authPassword = document.getElementById('authPassword');
+const authUsername = document.getElementById('authUsername');
+
+const loginBtn = document.getElementById('loginBtn');
+const registerBtn = document.getElementById('registerBtn');
+const googleBtn = document.getElementById('googleBtn');
+
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    authOverlay.style.display = 'none';
+    showPopup(`Zalogowano jako ${user.email}`, 'success');
+  } else {
+    authOverlay.style.display = 'flex';
+  }
+});
+
+loginBtn.onclick = async () => {
+  const login = authLogin.value.trim();
+  const pass = authPassword.value;
+  let email = login;
+
+  if (!login.includes('@')) {
+    const snap = await getDoc(doc(db, "usernames", login));
+    if (!snap.exists()) {
+      showPopup('Nie ma takiego użytkownika', 'error');
+      return;
+    }
+    email = snap.data().email;
+  }
+
+  await signInWithEmailAndPassword(auth, email, pass);
+loginBtn.onclick = async () => {
+  try {
+    const login = authLogin.value.trim();
+    const pass = authPassword.value;
+    let email = login;
+
+    if (!login.includes('@')) {
+      const snap = await getDoc(doc(db, "usernames", login));
+      if (!snap.exists()) {
+        showPopup('Nie ma takiego użytkownika', 'error');
+        return;
+      }
+      email = snap.data().email;
+    }
+
+    await signInWithEmailAndPassword(auth, email, pass);
+    showPopup('Zalogowano!', 'success');
+  } catch (err) {
+    showPopup('Błędny login lub hasło', 'error');
+  }
+};
+
+};
+
+registerBtn.onclick = async () => {
+  const email = authLogin.value.trim();
+  const pass = authPassword.value;
+  const username = authUsername.value.trim();
+
+  if (!email || !pass || !username) {
+    showPopup('Uzupełnij wszystkie pola', 'error');
+    return;
+  }
+
+  const usernameSnap = await getDoc(doc(db, "usernames", username));
+  if (usernameSnap.exists()) {
+    showPopup('Ta nazwa użytkownika jest zajęta', 'error');
+    return;
+  }
+
+  const cred = await createUserWithEmailAndPassword(auth, email, pass);
+
+  await setDoc(doc(db, "users", cred.user.uid), {
+    email,
+    username,
+    createdAt: Date.now()
+  });
+
+  await setDoc(doc(db, "usernames", username), {
+    email,
+    uid: cred.user.uid
+  });
+
+  showPopup('Zarejestrowano!', 'success');
+};
+
+googleBtn.onclick = async () => {
+  const provider = new GoogleAuthProvider();
+  await signInWithPopup(auth, provider);
+};
 </script>
 </body>
 </html>
